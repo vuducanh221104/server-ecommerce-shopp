@@ -1,0 +1,62 @@
+{
+    "name": "server",
+    "version": "1.0.0",
+    "main": "server.ts",
+    "engines": {
+        "node": "14.x"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "nodemon --inspect server.js",
+        "dev": "nodemon server"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/vuducanh221104/npbaomoi.git"
+    },
+    "keywords": [
+        "baomoi"
+    ],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/vuducanh221104/npbaomoi/issues"
+    },
+    "homepage": "https://github.com/vuducanh221104/npbaomoi#readme",
+    "dependencies": {
+        "axios": "^1.5.0",
+        "bcrypt": "^5.1.1",
+        "body-parse": "^0.1.0",
+        "body-parser": "^1.20.2",
+        "cloudinary": "^1.41.0",
+        "config": "^3.3.9",
+        "connect-mongo": "^5.0.0",
+        "cookie-parser": "^1.4.6",
+        "cors": "^2.8.5",
+        "crypto-js": "^4.1.1",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "jsonwebtoken": "^9.0.1",
+        "md5": "^2.3.0",
+        "method-override": "^3.0.0",
+        "moment": "^2.29.4",
+        "mongoose": "^7.4.1",
+        "mongoose-delete": "^1.0.1",
+        "mongoose-slug-generator": "^1.0.4",
+        "mongoose-slug-updater": "^3.3.0",
+        "multer": "^1.4.5-lts.1",
+        "multer-storage-cloudinary": "^4.0.0",
+        "node-fetch": "^3.3.2",
+        "nodemailer": "^6.9.4",
+        "nodemon": "^3.0.1",
+        "prettier": "^3.2.5",
+        "query-string": "^8.1.0",
+        "session-mongoose": "^0.5.2"
+    },
+    "devDependencies": {
+        "husky": "^8.0.3",
+        "lint-staged": "^13.2.3",
+        "mongoose-sequence": "^5.3.1"
+    },
+    "description": ""
+}
