@@ -1,9 +1,10 @@
 /** @typedef {import('./index').Logger} Logger */
 
-import debug from 'debug'
-import inspect from 'object-inspect'
+import { inspect } from 'node:util'
 
-import { configurationError } from './messages.js'
+import debug from 'debug'
+
+import { configurationError, failedToParseConfig } from './messages.js'
 import { ConfigEmptyError, ConfigFormatError } from './symbols.js'
 import { validateBraces } from './validateBraces.js'
 
@@ -22,14 +23,7 @@ const TEST_DEPRECATED_KEYS = new Map([
   ['relative', (key) => typeof key === 'boolean'],
 ])
 
-/**
- * Runs config validation. Throws error if the config is not valid.
- * @param {Object} config
- * @param {string} configPath
- * @param {Logger} logger
- * @returns {Object} config
- */
-export const validateConfig = (config, configPath, logger) => {
+export const validateConfigLogic = (config, configPath, logger) => {
   debugLog('Validating config from `%s`...', configPath)
 
   if (!config || (typeof config !== 'object' && typeof config !== 'function')) {
@@ -99,17 +93,29 @@ export const validateConfig = (config, configPath, logger) => {
   if (errors.length) {
     const message = errors.join('\n\n')
 
-    logger.error(`Could not parse lint-staged config.
-
-${message}
-
-See https://github.com/okonet/lint-staged#configuration.`)
+    logger.error(failedToParseConfig(configPath, message))
 
     throw new Error(message)
   }
 
   debugLog('Validated config from `%s`:', configPath)
-  debugLog(inspect(config, { indent: 2 }))
+  debugLog(inspect(config, { compact: false }))
 
   return validatedConfig
+}
+
+/**
+ * Runs config validation. Throws error if the config is not valid.
+ * @param {Object} config
+ * @param {string} configPath
+ * @param {Logger} logger
+ * @returns {Object} config
+ */
+export const validateConfig = (config, configPath, logger) => {
+  try {
+    return validateConfigLogic(config, configPath, logger)
+  } catch (error) {
+    logger.error(failedToParseConfig(configPath, error))
+    throw error
+  }
 }

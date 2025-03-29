@@ -1,7 +1,8 @@
 import path from 'node:path'
 
 import debug from 'debug'
-import normalize from 'normalize-path'
+
+import { normalizePath } from './normalizePath.js'
 
 const debugLog = debug('lint-staged:chunkFiles')
 
@@ -30,12 +31,12 @@ const chunkArray = (arr, chunkCount) => {
  * @param {Array<String>} opts.files
  * @param {String} [opts.baseDir] The optional base directory to resolve relative paths.
  * @param {number} [opts.maxArgLength] the maximum argument string length
- * @param {Boolean} [opts.relative] whether files are relative to `gitDir` or should be resolved as absolute
+ * @param {Boolean} [opts.relative] whether files are relative to `topLevelDir` or should be resolved as absolute
  * @returns {Array<Array<String>>}
  */
 export const chunkFiles = ({ files, baseDir, maxArgLength = null, relative = false }) => {
   const normalizedFiles = files.map((file) =>
-    normalize(relative || !baseDir ? file : path.resolve(baseDir, file))
+    normalizePath(relative || !baseDir ? file : path.resolve(baseDir, file))
   )
 
   if (!maxArgLength) {
