@@ -1,20 +1,44 @@
-import { Schema, model, Types } from "mongoose";
+import mongoose from "mongoose";
 
-const CategorySchema = new Schema(
+const CategorySchema = new mongoose.Schema(
   {
-    parent_id: {
-      type: Types.ObjectId,
+    name: {
+      type: String,
+      required: [true, "Tên danh mục là bắt buộc"],
+      trim: true,
+    },
+    slug: {
+      type: String,
+      required: [true, "Slug là bắt buộc"],
+      unique: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      default: "",
+    },
+    image: {
+      type: String,
+      default: "",
+    },
+    parent: {
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
       default: null,
     },
-    name: { type: String, required: true },
-    slug: { type: String, required: true, unique: true },
+    status: { type: Boolean, default: true },
+    __v: { type: Number, default: 0 },
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
     collection: "Categories",
   }
 );
 
-const Category = model("Category", CategorySchema);
-export default Category;
+// Tạo index để tìm kiếm nhanh hơn
+CategorySchema.index({ name: 1 });
+CategorySchema.index({ parent: 1 });
+
+export const Category = mongoose.model("Category", CategorySchema);

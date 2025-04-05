@@ -1,5 +1,6 @@
 import { CatchError } from "../config/catchError.js";
-import User from "../models/User.js";
+import jwt from "jsonwebtoken";
+import { User } from "../models/index.js";
 import { verifyAccessToken, extractTokenFromHeader } from "../utils/index.js";
 
 export const authenticateToken = CatchError(async (req, res, next) => {

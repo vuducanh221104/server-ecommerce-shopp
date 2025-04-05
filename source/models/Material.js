@@ -16,5 +16,4 @@ const MaterialSchema = new Schema(
   }
 );
 
-const Material = model("Material", MaterialSchema);
-export default Material;
+export const Material = model("Material", MaterialSchema);

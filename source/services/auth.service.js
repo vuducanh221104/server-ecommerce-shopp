@@ -1,17 +1,9 @@
-import User from "../models/User.js";
-import { RefreshToken } from "../models/index.js";
+import { User } from "../models/index.js";
 import TokenService from "./token.service.js";
+import UserService from "./user.service.js";
 import { hashPassword, comparePassword } from "../utils/index.js";
 
 class AuthService {
-  /**
-   * Đăng nhập người dùng
-   * @param {string} email - Email người dùng
-   * @param {string} password - Mật khẩu người dùng
-   * @param {string} ipAddress - Địa chỉ IP của client
-   * @param {string} userAgent - User agent của client
-   * @returns {Object} Thông tin đăng nhập bao gồm token và user
-   */
   async login(email, password, ipAddress, userAgent) {
     if (!email || !password) {
       throw new Error("Email và mật khẩu là bắt buộc");
@@ -48,24 +40,10 @@ class AuthService {
     return {
       accessToken,
       refreshToken,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        avatar: user.avatar,
-      },
+      user: UserService.formatUser(user),
     };
   }
 
-  /**
-   * Đăng ký người dùng mới
-   * @param {Object} userData - Thông tin người dùng đăng ký
-   * @param {string} ipAddress - Địa chỉ IP của client
-   * @param {string} userAgent - User agent của client
-   * @returns {Object} Thông tin đăng ký bao gồm token và user
-   */
   async register(userData, ipAddress, userAgent) {
     const { username, email, password, fullName } = userData;
 
@@ -119,96 +97,94 @@ class AuthService {
     return {
       accessToken,
       refreshToken,
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-        fullName: newUser.fullName,
-        role: newUser.role,
-      },
+      user: UserService.formatUser(newUser),
     };
   }
 
-  /**
-   * Làm mới access token bằng refresh token
-   * @param {string} refreshToken - JWT refresh token
-   * @param {string} ipAddress - Địa chỉ IP của client
-   * @param {string} userAgent - User agent của client
-   * @returns {Object} Thông tin mới bao gồm access token và user
-   */
-  async refreshToken(refreshToken, ipAddress, userAgent) {
-    if (!refreshToken) {
+  async refreshToken(token, ipAddress, userAgent) {
+    if (!token) {
       throw new Error("Refresh token không được cung cấp");
     }
 
-    // Kiểm tra token có hợp lệ không trước khi thử làm mới
-    const isValid = await TokenService.isRefreshTokenValid(refreshToken);
-    if (!isValid) {
-      throw new Error("Refresh token không hợp lệ hoặc đã hết hạn");
+    const decoded = await TokenService.verifyRefreshToken(token);
+    if (!decoded) {
+      throw new Error("Refresh token không hợp lệ");
     }
 
-    return TokenService.refreshAccessToken(refreshToken, ipAddress, userAgent);
-  }
-
-  /**
-   * Đăng xuất
-   * @param {string} refreshToken - JWT refresh token
-   * @returns {Object} Kết quả đăng xuất
-   */
-  async logout(refreshToken) {
-    if (refreshToken) {
-      // Thu hồi token trong database
-      await TokenService.revokeToken(refreshToken);
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      throw new Error("Người dùng không tồn tại");
     }
-    return { success: true };
+
+    const tokenDoc = user.refreshTokens.find(
+      (t) => t.token === token && !t.isRevoked
+    );
+
+    if (!tokenDoc) {
+      throw new Error("Refresh token không hợp lệ hoặc đã bị thu hồi");
+    }
+
+    if (new Date(tokenDoc.expiresAt) < new Date()) {
+      throw new Error("Refresh token đã hết hạn");
+    }
+
+    const accessToken = TokenService.generateAccessToken(user);
+
+    return {
+      accessToken,
+      user: UserService.formatUser(user),
+    };
   }
 
-  /**
-   * Đăng xuất khỏi tất cả thiết bị
-   * @param {string} userId - ID người dùng
-   * @returns {Object} Kết quả đăng xuất
-   */
-  async logoutFromAllDevices(userId) {
-    // Thu hồi tất cả token của user
-    await TokenService.revokeAllUserTokens(userId);
-    return { success: true };
-  }
-
-  /**
-   * Lấy danh sách phiên đăng nhập đang hoạt động
-   * @param {string} userId - ID người dùng
-   * @returns {Array} Danh sách phiên đăng nhập
-   */
-  async getActiveSessions(userId) {
-    const tokens = await TokenService.getUserActiveTokens(userId);
-    return tokens.map((token) => ({
-      id: token._id,
-      ipAddress: token.ipAddress,
-      userAgent: token.userAgent,
-      createdAt: token.createdAt,
-      lastUsedAt: token.updatedAt,
-    }));
-  }
-
-  /**
-   * Đăng xuất khỏi một phiên cụ thể
-   * @param {string} userId - ID người dùng
-   * @param {string} tokenId - ID của token phiên
-   * @returns {boolean} Kết quả đăng xuất
-   */
-  async logoutFromSession(userId, tokenId) {
-    const token = await RefreshToken.findOne({
-      _id: tokenId,
-      user: userId,
-    });
-
+  async logout(token) {
     if (!token) {
       return false;
     }
 
-    token.isRevoked = true;
-    await token.save();
-    return true;
+    const result = await User.updateOne(
+      { "refreshTokens.token": token },
+      { $set: { "refreshTokens.$.isRevoked": true } }
+    );
+
+    return result.modifiedCount > 0;
+  }
+
+  async logoutFromAllDevices(userId) {
+    const result = await User.updateOne(
+      { _id: userId },
+      { $set: { "refreshTokens.$[].isRevoked": true } }
+    );
+
+    return result.modifiedCount > 0;
+  }
+
+  async getActiveSessions(userId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("Người dùng không tồn tại");
+    }
+
+    const activeSessions = user.refreshTokens
+      .filter(
+        (token) => !token.isRevoked && new Date(token.expiresAt) > new Date()
+      )
+      .map((token) => ({
+        id: token._id,
+        ipAddress: token.ipAddress,
+        userAgent: token.userAgent,
+        createdAt: token.createdAt,
+      }));
+
+    return activeSessions;
+  }
+
+  async logoutFromSession(userId, sessionId) {
+    const result = await User.updateOne(
+      { _id: userId, "refreshTokens._id": sessionId },
+      { $set: { "refreshTokens.$.isRevoked": true } }
+    );
+
+    return result.modifiedCount > 0;
   }
 }
 
