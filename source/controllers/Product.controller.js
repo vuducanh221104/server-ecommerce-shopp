@@ -1,8 +1,8 @@
 import { CatchError } from "../config/catchError.js";
 import { ProductService } from "../services/index.js";
 
-const ProductController = {
-  getAllProducts: CatchError(async (req, res) => {
+class ProductController {
+  getAllProducts = CatchError(async (req, res) => {
     const filters = {
       page: req.query.page,
       limit: req.query.limit,
@@ -21,9 +21,9 @@ const ProductController = {
       products: result.products,
       pagination: result.pagination,
     });
-  }),
+  });
 
-  getProductById: CatchError(async (req, res) => {
+  getProductById = CatchError(async (req, res) => {
     const { id } = req.params;
 
     const product = await ProductService.getProductById(id);
@@ -37,36 +37,34 @@ const ProductController = {
       message: "Lấy thông tin sản phẩm thành công",
       product,
     });
-  }),
+  });
 
-  createProduct: CatchError(async (req, res) => {
+  createProduct = CatchError(async (req, res) => {
     const productData = req.body;
     console.log(
       "Request body in createProduct:",
       JSON.stringify(productData, null, 2)
     );
 
+    // Lấy các trường từ request body
     const {
       name,
       slug,
       description,
       category_id,
-      product_type_id,
       material_id,
       price,
-      thumb,
       total_quantity,
     } = productData;
 
+    // Chỉ kiểm tra các trường thực sự cần thiết
     if (
       !name ||
       !slug ||
       !description ||
       !category_id ||
-      !product_type_id ||
       !material_id ||
       !price ||
-      !thumb ||
       !total_quantity
     ) {
       return res.status(400).json({
@@ -77,15 +75,14 @@ const ProductController = {
           slug: !slug,
           description: !description,
           category_id: !category_id,
-          product_type_id: !product_type_id,
           material_id: !material_id,
           price: !price,
-          thumb: !thumb,
           total_quantity: !total_quantity,
         },
       });
     }
 
+    // Tạo sản phẩm mới với ProductService
     const newProduct = await ProductService.createProduct(productData);
 
     return res.status(201).json({
@@ -95,9 +92,9 @@ const ProductController = {
         product: newProduct,
       },
     });
-  }),
+  });
 
-  updateProduct: CatchError(async (req, res) => {
+  updateProduct = CatchError(async (req, res) => {
     const { id } = req.params;
 
     const updatedProduct = await ProductService.updateProduct(
@@ -110,9 +107,9 @@ const ProductController = {
       message: "Cập nhật sản phẩm thành công",
       product: updatedProduct,
     });
-  }),
+  });
 
-  deleteProduct: CatchError(async (req, res) => {
+  deleteProduct = CatchError(async (req, res) => {
     const { id } = req.params;
 
     await ProductService.deleteProduct(id);
@@ -120,10 +117,10 @@ const ProductController = {
     return res.status(200).json({
       message: "Xóa sản phẩm thành công",
     });
-  }),
+  });
 
-  getProductsByCategory: CatchError(async (req, res) => {
-    const { categoryId } = req.params;
+  getProductsByCategory = CatchError(async (req, res) => {
+    const { id: categoryId } = req.params;
     const options = {
       page: req.query.page,
       limit: req.query.limit,
@@ -148,9 +145,9 @@ const ProductController = {
       category: result.category.name,
       pagination: result.pagination,
     });
-  }),
+  });
 
-  searchProducts: CatchError(async (req, res) => {
+  searchProducts = CatchError(async (req, res) => {
     const { q } = req.query;
 
     if (!q) {
@@ -172,9 +169,9 @@ const ProductController = {
       search: result.search,
       pagination: result.pagination,
     });
-  }),
+  });
 
-  getFeaturedProducts: CatchError(async (req, res) => {
+  getFeaturedProducts = CatchError(async (req, res) => {
     const filters = {
       limit: req.query.limit,
       isFeatured: true,
@@ -186,9 +183,9 @@ const ProductController = {
       message: "Lấy danh sách sản phẩm nổi bật thành công",
       products: result.products,
     });
-  }),
+  });
 
-  getNewArrivals: CatchError(async (req, res) => {
+  getNewArrivals = CatchError(async (req, res) => {
     const filters = {
       limit: req.query.limit,
       sort: "createdAt",
@@ -198,12 +195,24 @@ const ProductController = {
     const result = await ProductService.getProducts(filters);
 
     return res.status(200).json({
-      message: "Lấy danh sách sản phẩm mới nhất thành công",
+      message: "Lấy danh sách sản phẩm mới thành công",
       products: result.products,
     });
-  }),
+  });
 
-  addVariantToProduct: CatchError(async (req, res) => {
+  getRelatedProducts = CatchError(async (req, res) => {
+    const { id } = req.params;
+    const limit = req.query.limit || 4;
+
+    const relatedProducts = await ProductService.getRelatedProducts(id, limit);
+
+    return res.status(200).json({
+      message: "Lấy danh sách sản phẩm liên quan thành công",
+      products: relatedProducts,
+    });
+  });
+
+  addVariantToProduct = CatchError(async (req, res) => {
     const { id } = req.params;
     const { variantId } = req.body;
 
@@ -222,10 +231,9 @@ const ProductController = {
       message: "Thêm biến thể sản phẩm thành công",
       product: updatedProduct,
     });
-  }),
+  });
 
-
-  updateStock: CatchError(async (req, res) => {
+  updateStock = CatchError(async (req, res) => {
     const { id } = req.params;
     const { quantity, variantId, sizeId, allVariants } = req.body;
 
@@ -266,7 +274,112 @@ const ProductController = {
       code: 200,
       data: updatedProduct,
     });
-  }),
-};
+  });
 
-export default ProductController;
+  getProductBySlug = CatchError(async (req, res) => {
+    const { slug } = req.params;
+
+    // Hardcode mẫu dữ liệu cho mục đích test
+    if (slug === "test-product") {
+      return res.status(200).json({
+        message: "Lấy thông tin sản phẩm thành công",
+        product: {
+          id: "1",
+          name: "Áo Polo Nam Pique Cotton",
+          description: {
+            header: {
+              material: "100% Cotton",
+              style: "Regular fit, người mẫu cao 186 - 77kg, mặc size 2XL",
+              responsible: "Đi chơi, đi chơi học, đi làm ngay",
+              features:
+                "Kiểu dệt Pique giúp áo thoáng khí, chất hòan thiện giúp ít vò lộn",
+              image:
+                "https://mcdn.coolmate.me/image/March2023/ao-polo-nam-pique-cotton-thumb-1.png",
+            },
+            body: '**Áo polo nam Pique Cotton** với chất vải cotton 100% cao cấp, mềm mại và thoáng khí tối ưu, đảm bảo mang lại trải nghiệm mặc thoải mái nhất cho chàng suốt cả ngày dài.\n\nĐây có thể là chiếc áo chủ đạo trong tủ đồ của mình. Hãy cùng Coolmate tìm đáp án cho câu hỏi: "Vì sao nên mua ngay chiếc áo này?"\n\n![](https://mcdn.coolmate.me/image/August2023/mceclip6_66.jpg)\n\n**Đặc điểm nổi bật Áo polo nam Pique Cotton**\n\nÁo polo nam chất liệu pique cotton 100% cao cấp, mềm mại và thoáng khí tối ưu, đảm bảo mang lại trải nghiệm mặc thoải mái nhất cho chàng suốt cả ngày dài.',
+          },
+          price: {
+            price: 179000,
+            originalPrice: 199000,
+            discountQuantity: 10,
+            currency: "VND",
+          },
+          comment: [
+            {
+              name: "Đức Anh",
+              username: "ducanh2211",
+              email: "vng1596@gmail.com",
+              rating: 5,
+              content: "Tốt 0k",
+              replyContentAdmin: "Cảm ơn anh ạ.",
+              created_at: "2024-08-04T04:27:43.876Z",
+              updated_at: "2024-11-27T15:50:18.958Z",
+            },
+            {
+              name: "Trà",
+              username: "tratg",
+              email: "tra@gmail.com",
+              rating: 4,
+              content: "Xấu",
+              replyContentAdmin: "Xin lỗi và trải nghiệm chưa tròn ý.",
+              created_at: "2024-08-04T04:27:43.876Z",
+              updated_at: "2024-11-27T15:50:18.958Z",
+            },
+          ],
+          category: {
+            parent: {
+              name: "Áo Nam",
+              slug: "ao-nam",
+            },
+            name: "Áo Polo",
+            slug: "ao-polo",
+          },
+          material: {
+            name: "Cotton",
+            slug: "cotton",
+          },
+          tagIsNew: true,
+          variants: [
+            {
+              name: "Tím",
+              colorThumbnail:
+                "https://media3.coolmate.me/cdn-cgi/image/width=160,height=160,quality=80,format=auto/uploads/December2024/ao-dai-tay-the-thao-1699-trang_(12).jpg",
+              images: [
+                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-11872-tim_85.jpg",
+                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-12012-tim_7.jpg",
+                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-12012-tim_7.jpg",
+              ],
+            },
+            {
+              name: "Trắng",
+              colorThumbnail:
+                "https://media3.coolmate.me/cdn-cgi/image/width=160,height=160,quality=80,format=auto/uploads/December2024/ao-dai-tay-the-thao-1699-trang_(12).jpg",
+              images: [
+                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-11872-white.jpg",
+                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-12012-white.jpg",
+                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-12012-white.jpg",
+              ],
+            },
+          ],
+          slug: "ao-polo-nam-pique-cotton",
+          created_at: "2024-08-04T04:27:43.876Z",
+          updated_at: "2024-11-27T15:50:18.958Z",
+        },
+      });
+    }
+
+    const product = await ProductService.getProductBySlug(slug);
+    if (!product) {
+      return res.status(404).json({
+        message: "Không tìm thấy sản phẩm",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Lấy thông tin sản phẩm thành công",
+      product,
+    });
+  });
+}
+
+export default new ProductController();

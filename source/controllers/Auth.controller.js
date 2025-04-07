@@ -1,8 +1,8 @@
 import { CatchError } from "../config/catchError.js";
 import { AuthService } from "../services/index.js";
 
-const AuthController = {
-  login: CatchError(async (req, res) => {
+class AuthController {
+  login = CatchError(async (req, res) => {
     const { email, password } = req.body;
 
     const ipAddress = req.ip || req.connection.remoteAddress;
@@ -38,9 +38,9 @@ const AuthController = {
       user,
       accessToken,
     });
-  }),
+  });
 
-  register: CatchError(async (req, res) => {
+  register = CatchError(async (req, res) => {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers["user-agent"];
 
@@ -86,9 +86,9 @@ const AuthController = {
       user,
       accessToken,
     });
-  }),
+  });
 
-  refreshToken: CatchError(async (req, res) => {
+  refreshToken = CatchError(async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
@@ -126,9 +126,9 @@ const AuthController = {
       res.clearCookie("refreshToken");
       return res.status(401).json({ message: error.message });
     }
-  }),
+  });
 
-  logout: CatchError(async (req, res) => {
+  logout = CatchError(async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
 
     if (refreshToken) {
@@ -139,9 +139,9 @@ const AuthController = {
     res.clearCookie("refreshToken");
 
     return res.status(200).json({ message: "Đăng xuất thành công" });
-  }),
+  });
 
-  logoutAll: CatchError(async (req, res) => {
+  logoutAll = CatchError(async (req, res) => {
     const userId = req.user._id;
 
     await AuthService.logoutFromAllDevices(userId);
@@ -152,9 +152,9 @@ const AuthController = {
     return res
       .status(200)
       .json({ message: "Đã đăng xuất khỏi tất cả các thiết bị" });
-  }),
+  });
 
-  getActiveSessions: CatchError(async (req, res) => {
+  getActiveSessions = CatchError(async (req, res) => {
     const userId = req.user._id;
 
     const sessions = await AuthService.getActiveSessions(userId);
@@ -163,9 +163,9 @@ const AuthController = {
       message: "Danh sách phiên đăng nhập",
       sessions,
     });
-  }),
+  });
 
-  logoutFromSession: CatchError(async (req, res) => {
+  logoutFromSession = CatchError(async (req, res) => {
     const userId = req.user._id;
     const { sessionId } = req.params;
 
@@ -182,7 +182,7 @@ const AuthController = {
     }
 
     return res.status(200).json({ message: "Đã đăng xuất khỏi phiên" });
-  }),
-};
+  });
+}
 
-export default AuthController;
+export default new AuthController();

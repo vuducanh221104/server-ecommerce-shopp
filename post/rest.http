@@ -1,0 +1,185 @@
+### BIẾN MÔI TRƯỜNG
+@baseUrl = http://localhost:4000/api/v1
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3ZjMzY2M5NmNlN2I5YWM4ZDU4NzYwOSIsInJvbGUiOjAsImlhdCI6MTc0Mzk5NDA5MywiZXhwIjoxNzQzOTk0OTkzfQ.f5SIHjJyGZPgxpx5Zm2cepd2u_fhXxUWzNUDR75o6Ec
+@categoryId = 67f1452519ecc7c90441f446
+@materialId = 67f33d917ab8e4dc7e066620
+
+###########################################################
+### 0. AUTH API
+###########################################################
+
+### 0.1 Đăng ký tài khoản
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "username": "admin",
+  "fullName": "Admin User",
+  "email": "admin@example.com",
+  "password": "admin123"
+}
+
+### 0.2 Đăng nhập
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "admin123"
+}
+
+###########################################################
+### 1. CATEGORIES API
+###########################################################
+
+### 1.1 Lấy tất cả danh mục
+GET {{baseUrl}}/categories
+
+###########################################################
+### 2. MATERIALS API
+###########################################################
+
+### 2.1 Lấy tất cả chất liệu
+GET {{baseUrl}}/materials
+
+### 2.2 Tạo chất liệu mới
+POST {{baseUrl}}/materials
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "name": "Cotton",
+  "description": "Chất liệu cotton 100% cao cấp"
+}
+
+###########################################################
+### 3. PRODUCT API
+###########################################################
+
+### 3.1 Tạo sản phẩm mới - Phiên bản đơn giản (sau khi sửa controller)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "name": "Áo Polo Nam Coolmax Air",
+  "slug": "ao-polo-nam-coolmax-air-2024",
+  "description": "Áo polo nam Coolmax Air với công nghệ thoáng khí cao cấp",
+  "price": {
+    "original": 249000,
+    "discountQuantity": 15,
+    "currency": "VND"
+  },
+  "category_id": "67f1452519ecc7c90441f446",
+  "material_id": "67f33d917ab8e4dc7e066620",
+  "total_quantity": 80
+}
+
+### 3.2 Lấy sản phẩm theo danh mục
+GET {{baseUrl}}/products/category/{{categoryId}}
+
+### 3.3 Tìm kiếm sản phẩm
+GET {{baseUrl}}/products/search?q=áo
+
+### 3.4 Lấy sản phẩm theo slug (slug chính xác)
+GET {{baseUrl}}/products/slug/o-polo-nam-coolmax-air
+
+### 3.4.1 Lấy sản phẩm theo slug (biến thể 2)
+GET {{baseUrl}}/products/slug/o-polo-nam-coolmax-air
+
+### 3.4.2 Lấy sản phẩm theo slug (biến thể 3)
+GET {{baseUrl}}/products/slug/ao-so-mi-nam-linen-thoang-khi
+
+### 3.5 Lấy sản phẩm mẫu theo slug (hardcode data)
+GET {{baseUrl}}/products/slug/test-product
+
+### 3.6 Tạo sản phẩm bằng cURL
+# Sao chép và chạy lệnh này trong terminal
+# curl -X POST http://localhost:4000/api/v1/products \
+#   -H "Content-Type: application/json" \
+#   -H "Authorization: Bearer {{authToken}}" \
+#   -d '{
+#     "name": "Áo Polo Nam Pique Cotton",
+#     "slug": "ao-polo-nam-pique-cotton-2",
+#     "description": "Áo polo nam Pique Cotton với chất vải cotton 100% cao cấp",
+#     "price": {
+#       "original": 199000,
+#       "discountQuantity": 10,
+#       "currency": "VND"
+#     },
+#     "category_id": "67f1452519ecc7c90441f446",
+#     "material_id": "67f33d917ab8e4dc7e066620",
+#     "product_type_id": "67f1452519ecc7c90441f446",
+#     "thumb": "https://mcdn.coolmate.me/image/March2023/ao-polo-nam-pique-cotton-thumb-1.png",
+#     "total_quantity": 100
+#   }'
+
+### 3.7 Lấy tất cả sản phẩm
+GET {{baseUrl}}/products
+
+### 3.8 Tạo sản phẩm mới (kiểm tra slug tiếng Việt)
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "name": "Áo Sơ Mi Nam Linen Thoáng Khí",
+  "slug": "ao-so-mi-nam-linen-thoang-khi",
+  "description": "Áo sơ mi nam chất liệu linen cao cấp, thoáng khí, phù hợp với thời tiết nóng ẩm, đặc biệt thoải mái khi mặc trong mùa hè.",
+  "price": {
+    "original": 329000,
+    "discountQuantity": 20,
+    "currency": "VND"
+  },
+  "category_id": "67f1452519ecc7c90441f446",
+  "material_id": "67f33d917ab8e4dc7e066620",
+  "total_quantity": 50,
+  "variants": [
+    {
+      "name": "Xanh Navy",
+      "color": "#000080",
+      "colorThumbnail": "https://media3.coolmate.me/cdn-cgi/image/width=160,height=160,quality=80,format=auto/uploads/March2024/ao-so-mi-nam-navy-thumb.jpg",
+      "sizes": [
+        {
+          "size": "M",
+          "stock": 15
+        },
+        {
+          "size": "L",
+          "stock": 20
+        },
+        {
+          "size": "XL",
+          "stock": 15
+        }
+      ],
+      "images": [
+        "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2024/ao-so-mi-nam-navy-1.jpg",
+        "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2024/ao-so-mi-nam-navy-2.jpg"
+      ]
+    }
+  ]
+}
+
+### 3.9 Lấy sản phẩm mới tạo theo slug
+GET {{baseUrl}}/products/slug/ao-so-mi-nam-linen-thoang-khi
+
+### 3.10 Lấy sản phẩm theo search
+GET {{baseUrl}}/products/search?q=linen
+
+### 3.11 Test search API với nhiều query
+### 3.11.1 Tìm kiếm theo tên sản phẩm
+GET {{baseUrl}}/products/search?q=Polo
+
+### 3.11.2 Tìm kiếm theo chất liệu
+GET {{baseUrl}}/products/search?q=cotton
+
+### 3.11.3 Tìm kiếm theo mô tả
+GET {{baseUrl}}/products/search?q=thoáng khí
+
+### 3.11.4 Tìm kiếm với dấu tiếng Việt
+GET {{baseUrl}}/products/search?q=áo sơ mi
+
+### 3.11.5 Tìm kiếm không phân biệt chữ hoa/thường
+GET {{baseUrl}}/products/search?q=COOLMAX

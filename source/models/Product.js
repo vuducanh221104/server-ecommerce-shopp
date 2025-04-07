@@ -29,7 +29,6 @@ const PriceSchema = new Schema(
   { _id: true, timestamps: false }
 );
 
-
 const CommentSchema = new Schema(
   {
     user_id: { type: Types.ObjectId, ref: "User", required: true },
@@ -59,7 +58,7 @@ const CommentSchema = new Schema(
 
 const ProductSchema = new Schema(
   {
-    product_type_id: { type: Types.ObjectId, required: true },
+    product_type_id: { type: Types.ObjectId, required: false },
     material_id: {
       type: Types.ObjectId,
       ref: "Material",
@@ -76,7 +75,7 @@ const ProductSchema = new Schema(
     },
     name: { type: String, required: true },
     price: { type: PriceSchema, required: true },
-    thumb: { type: String, required: true },
+    thumb: { type: String, required: false },
     variants: [VariantSchema],
     total_quantity: { type: Number, required: true },
     total_star: { type: Number, default: 5 },
@@ -90,7 +89,6 @@ const ProductSchema = new Schema(
     collection: "Products",
   }
 );
-
 
 ProductSchema.index({ category_id: 1 });
 ProductSchema.index({ name: "text", description: "text" });

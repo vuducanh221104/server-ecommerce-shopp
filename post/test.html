@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test API</title>
+  </head>
+  <body>
+    <h2>Test API Create Product</h2>
+    <button onclick="createProduct()">Create Product</button>
+    <pre
+      id="result"
+      style="margin-top: 20px; padding: 10px; background-color: #f5f5f5"
+    ></pre>
+
+    <script>
+      function createProduct() {
+        const token =
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3ZjMzY2M5NmNlN2I5YWM4ZDU4NzYwOSIsInJvbGUiOjAsImlhdCI6MTc0Mzk5NDA5MywiZXhwIjoxNzQzOTk0OTkzfQ.f5SIHjJyGZPgxpx5Zm2cepd2u_fhXxUWzNUDR75o6Ec";
+
+        const productData = {
+          name: "Áo Polo Nam Premium Cotton",
+          slug: "ao-polo-nam-premium-cotton-" + new Date().getTime(),
+          description:
+            "Áo polo nam Premium Cotton với chất vải cotton 100% cao cấp",
+          price: {
+            original: 199000,
+            discountQuantity: 10,
+            currency: "VND",
+          },
+          category_id: "67f1452519ecc7c90441f446",
+          material_id: "67f33d917ab8e4dc7e066620",
+          product_type_id: "67f1452519ecc7c90441f446",
+          thumb:
+            "https://mcdn.coolmate.me/image/March2023/ao-polo-nam-pique-cotton-thumb-1.png",
+          total_quantity: 100,
+        };
+
+        fetch("http://localhost:4000/api/v1/products", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(productData),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("result").textContent = JSON.stringify(
+              data,
+              null,
+              2
+            );
+          })
+          .catch((error) => {
+            document.getElementById("result").textContent =
+              "Error: " + error.message;
+          });
+      }
+    </script>
+  </body>
+</html>

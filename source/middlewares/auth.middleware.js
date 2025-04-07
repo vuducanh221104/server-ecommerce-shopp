@@ -41,3 +41,7 @@ export const authorizeRoles = (...roles) => {
     next();
   };
 };
+
+// Alias để tương thích với các file routes hiện tại
+export const isAuth = authenticateToken;
+export const isAdmin = authorizeRoles("admin");

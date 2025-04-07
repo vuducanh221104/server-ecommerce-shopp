@@ -1,8 +1,8 @@
 import { CatchError } from "../config/catchError.js";
 import { UserService } from "../services/index.js";
 
-const UserController = {
-  getProfile: CatchError(async (req, res) => {
+class UserController {
+  getProfile = CatchError(async (req, res) => {
     const userId = req.user._id;
     const user = await UserService.getProfile(userId);
 
@@ -14,9 +14,9 @@ const UserController = {
       message: "User profile retrieved successfully",
       user,
     });
-  }),
+  });
 
-  updateProfile: CatchError(async (req, res) => {
+  updateProfile = CatchError(async (req, res) => {
     const userId = req.user._id;
 
     if (req.body.password && !req.body.currentPassword) {
@@ -29,9 +29,9 @@ const UserController = {
       message: "Profile updated successfully",
       user: updatedUser,
     });
-  }),
+  });
 
-  deleteProfile: CatchError(async (req, res) => {
+  deleteProfile = CatchError(async (req, res) => {
     const userId = req.user._id;
 
     const result = await UserService.deleteProfile(userId);
@@ -43,18 +43,18 @@ const UserController = {
     return res.status(200).json({
       message: "Profile deactivated successfully",
     });
-  }),
+  });
 
-  getAllUsers: CatchError(async (req, res) => {
+  getAllUsers = CatchError(async (req, res) => {
     const users = await UserService.getAllUsers();
 
     return res.status(200).json({
       message: "Users retrieved successfully",
       users,
     });
-  }),
+  });
 
-  getUserById: CatchError(async (req, res) => {
+  getUserById = CatchError(async (req, res) => {
     const { id } = req.params;
     const user = await UserService.getUserById(id);
 
@@ -66,9 +66,9 @@ const UserController = {
       message: "User retrieved successfully",
       user,
     });
-  }),
+  });
 
-  updateUserById: CatchError(async (req, res) => {
+  updateUserById = CatchError(async (req, res) => {
     const { id } = req.params;
     const updatedUser = await UserService.updateUserById(id, req.body);
 
@@ -80,7 +80,7 @@ const UserController = {
       message: "User updated successfully",
       user: updatedUser,
     });
-  }),
-};
+  });
+}
 
-export default UserController;
+export default new UserController();

@@ -1,8 +1,8 @@
 import { CatchError } from "../config/catchError.js";
 import { CartService } from "../services/index.js";
 
-const CartController = {
-  getCart: CatchError(async (req, res) => {
+class CartController {
+  getCart = CatchError(async (req, res) => {
     const userId = req.user._id;
 
     const cartItems = await CartService.getCartItems(userId);
@@ -11,9 +11,9 @@ const CartController = {
       message: "Lấy giỏ hàng thành công",
       cart: cartItems,
     });
-  }),
+  });
 
-  addToCart: CatchError(async (req, res) => {
+  addToCart = CatchError(async (req, res) => {
     const userId = req.user._id;
     const { product_id, quantity, color, size } = req.body;
 
@@ -34,9 +34,9 @@ const CartController = {
       message: "Thêm sản phẩm vào giỏ hàng thành công",
       cartItem,
     });
-  }),
+  });
 
-  updateCartItem: CatchError(async (req, res) => {
+  updateCartItem = CatchError(async (req, res) => {
     const userId = req.user._id;
     const { id } = req.params;
     const { quantity } = req.body;
@@ -64,9 +64,9 @@ const CartController = {
       message: "Cập nhật giỏ hàng thành công",
       cartItem: updatedItem,
     });
-  }),
+  });
 
-  removeFromCart: CatchError(async (req, res) => {
+  removeFromCart = CatchError(async (req, res) => {
     const userId = req.user._id;
     const { id } = req.params;
 
@@ -75,9 +75,9 @@ const CartController = {
     return res.status(200).json({
       message: "Xóa sản phẩm khỏi giỏ hàng thành công",
     });
-  }),
+  });
 
-  clearCart: CatchError(async (req, res) => {
+  clearCart = CatchError(async (req, res) => {
     const userId = req.user._id;
 
     await CartService.clearCart(userId);
@@ -85,7 +85,7 @@ const CartController = {
     return res.status(200).json({
       message: "Xóa toàn bộ giỏ hàng thành công",
     });
-  }),
-};
+  });
+}
 
-export default CartController;
+export default new CartController();

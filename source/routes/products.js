@@ -1,48 +1,32 @@
 import express from "express";
+import { isAdmin, isAuth } from "../middlewares/auth.middleware.js";
 import ProductController from "../controllers/Product.controller.js";
-import {
-  authenticateToken,
-  authorizeRoles,
-} from "../middlewares/auth.middleware.js";
+import { publicApiLimiter } from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 
-router.get("/", ProductController.getAllProducts);
-router.get("/search", ProductController.searchProducts);
-router.get("/featured", ProductController.getFeaturedProducts);
-router.get("/new-arrivals", ProductController.getNewArrivals);
-router.get("/category/:categoryId", ProductController.getProductsByCategory);
-router.get("/:id", ProductController.getProductById);
+// Routes công khai - áp dụng publicApiLimiter
+router.get("/search", publicApiLimiter, ProductController.searchProducts);
+router.get(
+  "/featured",
+  publicApiLimiter,
+  ProductController.getFeaturedProducts
+);
+router.get("/new-arrivals", publicApiLimiter, ProductController.getNewArrivals);
+router.get(
+  "/category/:id",
+  publicApiLimiter,
+  ProductController.getProductsByCategory
+);
+router.get("/slug/:slug", publicApiLimiter, ProductController.getProductBySlug);
+router.get("/", publicApiLimiter, ProductController.getAllProducts);
+router.get("/:id", publicApiLimiter, ProductController.getProductById);
 
-
+// Routes yêu cầu quyền admin
 router.post("/", ProductController.createProduct);
-
-router.put(
-  "/:id",
-  authenticateToken,
-  authorizeRoles(2),
-  ProductController.updateProduct
-);
-
-router.delete(
-  "/:id",
-  authenticateToken,
-  authorizeRoles(2),
-  ProductController.deleteProduct
-);
-
-router.post(
-  "/:id/variants",
-  authenticateToken,
-  authorizeRoles(2),
-  ProductController.addVariantToProduct
-);
-
-router.patch(
-  "/:id/stock",
-  authenticateToken,
-  authorizeRoles(2),
-  ProductController.updateStock
-);
+router.put("/:id", ProductController.updateProduct);
+router.delete("/:id", ProductController.deleteProduct);
+router.post("/:id/variants", ProductController.addVariantToProduct);
+router.patch("/:id/stock", ProductController.updateStock);
 
 export default router;

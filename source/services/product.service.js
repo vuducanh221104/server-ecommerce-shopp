@@ -109,10 +109,44 @@ class ProductService {
     return this.formatProduct(product);
   }
 
+  async getProductBySlug(slug) {
+    const product = await Product.findOne({ slug })
+      .populate({
+        path: "category_id",
+        select: "name slug _id",
+        populate: {
+          path: "parent",
+          select: "name slug _id",
+        },
+      })
+      .populate("material_id", "name slug _id")
+      .populate({
+        path: "variants",
+        select: "name color colorThumbnail images sizes",
+      })
+      .populate({
+        path: "comments",
+        select:
+          "user_id user_name content rating replyContentAdmin createdAt updatedAt",
+        populate: {
+          path: "user_id",
+          select: "_id username email",
+        },
+      });
+
+    if (!product) {
+      return null;
+    }
+
+    return this.formatProduct(product);
+  }
+
   async getProductsByCategory(categoryId, options = {}) {
     const { page = 1, limit = 10 } = options;
 
-    const categoryExists = await Category.findById(categoryId);
+    const categoryExists = await Category.findById(categoryId).populate(
+      "parent"
+    );
     if (!categoryExists) {
       return {
         products: [],
@@ -129,15 +163,28 @@ class ProductService {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const products = await Product.find({ category_id: categoryId })
-      .populate("category_id", "name slug _id")
-      .populate("material_id", "name _id")
       .populate({
-        path: "price",
-        select: "original discount discountQuantity currency",
+        path: "category_id",
+        select: "name slug parent",
+        populate: {
+          path: "parent",
+          select: "name slug _id",
+        },
       })
+      .populate("material_id", "name slug _id")
+      .populate(
+        "comments",
+        "user_id user_name content rating replyContentAdmin createdAt updatedAt",
+        {
+          populate: {
+            path: "user_id",
+            select: "_id username email",
+          },
+        }
+      )
       .populate({
         path: "variants",
-        select: "name color colorThumbnail images",
+        select: "name color colorThumbnail images sizes",
       })
       .skip(skip)
       .limit(parseInt(limit))
@@ -220,12 +267,21 @@ class ProductService {
   }
 
   createSlug(name) {
-    return name
+    // Chuẩn hóa dấu tiếng Việt trước
+    let slug = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // Chuyển Đ/đ thành D/d
+    slug = slug.replace(/[Đ]/g, "D").replace(/[đ]/g, "d");
+
+    // Loại bỏ ký tự đặc biệt và chuyển khoảng trắng thành dấu gạch ngang
+    slug = slug
       .toLowerCase()
       .trim()
       .replace(/[^\w\s-]/g, "")
       .replace(/[\s_-]+/g, "-")
       .replace(/^-+|-+$/g, "");
+
+    return slug;
   }
 
   async createProduct(productData, userId) {
@@ -403,16 +459,38 @@ class ProductService {
   }
 
   async deleteProduct(id) {
-    // Kiểm tra sản phẩm tồn tại
-    const product = await Product.findById(id);
+    const deletedProduct = await Product.findByIdAndDelete(id);
+    if (!deletedProduct) {
+      throw new Error("Không tìm thấy sản phẩm để xóa");
+    }
+    return deletedProduct;
+  }
+
+  async getRelatedProducts(productId, limit = 4) {
+    // Tìm sản phẩm
+    const product = await Product.findById(productId);
     if (!product) {
-      throw new Error("Không tìm thấy sản phẩm");
+      return [];
     }
 
-    // Xóa sản phẩm
-    await Product.findByIdAndDelete(id);
+    // Tìm các sản phẩm liên quan dựa trên category_id và material_id
+    const relatedProducts = await Product.find({
+      $or: [
+        { category_id: product.category_id },
+        { material_id: product.material_id },
+      ],
+      _id: { $ne: productId }, // Loại trừ sản phẩm hiện tại
+    })
+      .populate("category_id", "name slug _id")
+      .populate("material_id", "name _id")
+      .populate({
+        path: "variants",
+        select: "name color colorThumbnail images",
+      })
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 });
 
-    return { success: true };
+    return relatedProducts.map((product) => this.formatProduct(product));
   }
 
   async addVariantToProduct(productId, variantData) {
@@ -526,22 +604,39 @@ class ProductService {
     if (!product) return null;
 
     // Xử lý description để chia thành header và body
-    let header = "";
+    let header = {};
     let body = "";
 
     if (product.description) {
-      const descriptionText =
-        typeof product.description === "string"
-          ? product.description
-          : JSON.stringify(product.description);
+      try {
+        // Thử parse nếu là JSON string
+        const descObj =
+          typeof product.description === "string"
+            ? JSON.parse(product.description)
+            : product.description;
 
-      // Giả định format: Heading\n\nBody
-      const parts = descriptionText.split("\n\n");
-      if (parts.length > 1) {
-        header = parts[0];
-        body = parts.slice(1).join("\n\n");
-      } else {
-        body = descriptionText;
+        if (typeof descObj === "object") {
+          header = descObj.header || {};
+          body = descObj.body || "";
+        } else {
+          // Nếu không phải JSON object, xử lý như text thông thường
+          const parts = product.description.split("\n\n");
+          if (parts.length > 1) {
+            header = { text: parts[0] };
+            body = parts.slice(1).join("\n\n");
+          } else {
+            body = product.description;
+          }
+        }
+      } catch (e) {
+        // Nếu không parse được JSON, xử lý như text thông thường
+        const parts = product.description.split("\n\n");
+        if (parts.length > 1) {
+          header = { text: parts[0] };
+          body = parts.slice(1).join("\n\n");
+        } else {
+          body = product.description;
+        }
       }
     }
 
@@ -549,14 +644,11 @@ class ProductService {
     const formattedComments = product.comments
       ? product.comments.map((comment) => {
           return {
-            id: comment._id.toString(),
-            user_id:
-              comment.user_id?._id?.toString() ||
-              comment.user_id?.toString() ||
-              "",
-            user_name: comment.user_name || comment.user_id?.username || "",
-            content: comment.content || "",
+            name: comment.user_name || comment.user_id?.username || "",
+            username: comment.user_id?.username || "",
+            email: comment.user_id?.email || "",
             rating: comment.rating || 5,
+            content: comment.content || "",
             replyContentAdmin: comment.replyContentAdmin || "",
             created_at: comment.createdAt
               ? comment.createdAt.toISOString()
@@ -568,13 +660,28 @@ class ProductService {
         })
       : [];
 
+    // Xử lý variants để trả về định dạng như trong hình
+    const formattedVariants = product.variants
+      ? product.variants.map((variant) => ({
+          name: variant.name || "",
+          colorThumbnail: variant.colorThumbnail || "",
+          images: variant.images || [],
+        }))
+      : [];
+
     return {
       id: product._id.toString(),
       name: product.name,
       description: {
         header: header,
+        material: product.material_id?.name || "",
+        style: product.style || "Regular fit",
+        responsible: product.responsible || "",
+        features: product.features || "",
+        image: product.thumb || "",
         body: body,
       },
+      body: body,
       price: {
         price: product.price?.original || 0,
         originalPrice: product.price?.original || 0,
@@ -585,27 +692,19 @@ class ProductService {
       category: {
         parent: product.category_id?.parent
           ? {
-              _id: product.category_id.parent._id?.toString(),
               name: product.category_id.parent.name || "",
               slug: product.category_id.parent.slug || "",
             }
           : null,
-        _id: product.category_id?._id?.toString(),
         name: product.category_id?.name || "",
         slug: product.category_id?.slug || "",
       },
       material: {
-        _id: product.material_id?._id?.toString(),
         name: product.material_id?.name || "",
         slug: product.material_id?.slug || "",
       },
       tagIsNew: product.tagIsNew || false,
-      variants:
-        product.variants?.map((variant) => ({
-          name: variant.name || "",
-          colorThumbnail: variant.colorThumbnail || "",
-          images: variant.images || [],
-        })) || [],
+      variants: formattedVariants,
       slug: product.slug || "",
       created_at: product.createdAt ? product.createdAt.toISOString() : "",
       updated_at: product.updatedAt ? product.updatedAt.toISOString() : "",
