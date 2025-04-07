@@ -139,10 +139,24 @@ class ProductController {
       });
     }
 
+    // Định dạng thông tin danh mục giống như trong mảng categories của sản phẩm
+    const formattedCategory = {
+      id: result.category._id,
+      name: result.category.name,
+      slug: result.category.slug,
+      parent: result.category.parent
+        ? {
+            id: result.category.parent._id,
+            name: result.category.parent.name,
+            slug: result.category.parent.slug,
+          }
+        : null,
+    };
+
     return res.status(200).json({
       message: "Lấy danh sách sản phẩm theo danh mục thành công",
       products: result.products,
-      category: result.category.name,
+      category: formattedCategory,
       pagination: result.pagination,
     });
   });

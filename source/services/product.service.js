@@ -147,18 +147,21 @@ class ProductService {
     }
 
     // Kiểm tra xem danh mục có parent nhưng chưa được populate không
-    if (
-      product.category_id &&
-      product.category_id.parent &&
-      typeof product.category_id.parent === "object" &&
-      !product.category_id.parent.name
-    ) {
-      // Populate parent thủ công
-      const parentCategory = await Category.findById(
-        product.category_id.parent
-      );
-      if (parentCategory) {
-        product.category_id.parent = parentCategory;
+    if (Array.isArray(product.category_id)) {
+      for (let i = 0; i < product.category_id.length; i++) {
+        const category = product.category_id[i];
+        if (
+          category &&
+          category.parent &&
+          typeof category.parent === "object" &&
+          !category.parent.name
+        ) {
+          // Populate parent thủ công
+          const parentCategory = await Category.findById(category.parent);
+          if (parentCategory) {
+            product.category_id[i].parent = parentCategory;
+          }
+        }
       }
     }
 
@@ -186,7 +189,8 @@ class ProductService {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const products = await Product.find({ category_id: categoryId })
+    // Tìm sản phẩm có categoryId trong mảng category_id
+    const products = await Product.find({ category_id: { $in: [categoryId] } })
       .populate({
         path: "category_id",
         select: "name slug parent",
@@ -214,7 +218,9 @@ class ProductService {
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });
 
-    const total = await Product.countDocuments({ category_id: categoryId });
+    const total = await Product.countDocuments({
+      category_id: { $in: [categoryId] },
+    });
 
     const formattedProducts = products.map((product) =>
       this.formatProduct(product)
@@ -317,22 +323,48 @@ class ProductService {
     const { name, description, price, category_id, material_id, variants } =
       productData;
 
-    if (!name || !description || !price || !category_id) {
+    if (!name || !description || !price) {
       throw new Error("Thiếu thông tin sản phẩm bắt buộc");
     }
 
     // Kiểm tra danh mục tồn tại
-    const categoryExists = await Category.findById(category_id);
-    if (!categoryExists) {
-      throw new Error("Danh mục không tồn tại");
+    let categoryIds = [];
+    if (Array.isArray(category_id)) {
+      // Nếu là mảng, kiểm tra từng danh mục
+      for (const id of category_id) {
+        const categoryExists = await Category.findById(id);
+        if (!categoryExists) {
+          throw new Error(`Danh mục với ID ${id} không tồn tại`);
+        }
+        categoryIds.push(id);
+      }
+    } else if (category_id) {
+      // Nếu là một ID đơn lẻ, chuyển đổi thành mảng
+      const categoryExists = await Category.findById(category_id);
+      if (!categoryExists) {
+        throw new Error("Danh mục không tồn tại");
+      }
+      categoryIds.push(category_id);
     }
 
     // Kiểm tra vật liệu tồn tại nếu được cung cấp
-    if (material_id) {
+    let materialIds = [];
+    if (Array.isArray(material_id)) {
+      // Nếu là mảng, kiểm tra từng vật liệu
+      for (const id of material_id) {
+        const materialExists = await Material.findById(id);
+        if (!materialExists) {
+          throw new Error(`Chất liệu với ID ${id} không tồn tại`);
+        }
+        materialIds.push(id);
+      }
+    } else if (material_id) {
+      // Nếu là một ID đơn lẻ, chuyển đổi thành mảng
       const materialExists = await Material.findById(material_id);
       if (!materialExists) {
         throw new Error("Chất liệu không tồn tại");
       }
+      materialIds.push(material_id);
     }
 
     // Tạo slug từ tên sản phẩm
@@ -380,8 +412,8 @@ class ProductService {
         discountQuantity: price.discountQuantity || 0,
         currency: price.currency || "VND",
       },
-      category_id,
-      material_id,
+      category_id: categoryIds,
+      material_id: materialIds,
       variants: processedVariants,
       total_quantity: totalQuantity,
       created_by: userId,
@@ -393,17 +425,47 @@ class ProductService {
   async updateProduct(id, updateData, userId) {
     // Kiểm tra danh mục tồn tại nếu được cập nhật
     if (updateData.category_id) {
-      const categoryExists = await Category.findById(updateData.category_id);
-      if (!categoryExists) {
-        throw new Error("Danh mục không tồn tại");
+      let categoryIds = [];
+      if (Array.isArray(updateData.category_id)) {
+        // Nếu là mảng, kiểm tra từng danh mục
+        for (const catId of updateData.category_id) {
+          const categoryExists = await Category.findById(catId);
+          if (!categoryExists) {
+            throw new Error(`Danh mục với ID ${catId} không tồn tại`);
+          }
+          categoryIds.push(catId);
+        }
+        updateData.category_id = categoryIds;
+      } else {
+        // Nếu là một ID đơn lẻ, chuyển đổi thành mảng
+        const categoryExists = await Category.findById(updateData.category_id);
+        if (!categoryExists) {
+          throw new Error("Danh mục không tồn tại");
+        }
+        updateData.category_id = [updateData.category_id];
       }
     }
 
     // Kiểm tra vật liệu tồn tại nếu được cập nhật
     if (updateData.material_id) {
-      const materialExists = await Material.findById(updateData.material_id);
-      if (!materialExists) {
-        throw new Error("Chất liệu không tồn tại");
+      let materialIds = [];
+      if (Array.isArray(updateData.material_id)) {
+        // Nếu là mảng, kiểm tra từng vật liệu
+        for (const matId of updateData.material_id) {
+          const materialExists = await Material.findById(matId);
+          if (!materialExists) {
+            throw new Error(`Chất liệu với ID ${matId} không tồn tại`);
+          }
+          materialIds.push(matId);
+        }
+        updateData.material_id = materialIds;
+      } else {
+        // Nếu là một ID đơn lẻ, chuyển đổi thành mảng
+        const materialExists = await Material.findById(updateData.material_id);
+        if (!materialExists) {
+          throw new Error("Chất liệu không tồn tại");
+        }
+        updateData.material_id = [updateData.material_id];
       }
     }
 
@@ -477,8 +539,15 @@ class ProductService {
       new: true,
       runValidators: true,
     })
-      .populate("category_id", "name")
-      .populate("material_id", "name");
+      .populate({
+        path: "category_id",
+        select: "name slug _id parent",
+        populate: {
+          path: "parent",
+          select: "name slug _id",
+        },
+      })
+      .populate("material_id", "name slug _id");
 
     if (!updatedProduct) {
       throw new Error("Không tìm thấy sản phẩm");
@@ -698,42 +767,63 @@ class ProductService {
         }))
       : [];
 
-    // Xử lý thông tin danh mục và danh mục cha
-    let categoryInfo = {
-      parent: null,
-      name: "",
-      slug: "",
-    };
+    // Xử lý thông tin các danh mục
+    const categories = Array.isArray(product.category_id)
+      ? product.category_id
+          .map((category) => {
+            if (!category) return null;
 
-    if (product.category_id) {
-      categoryInfo.name = product.category_id.name || "";
-      categoryInfo.slug = product.category_id.slug || "";
+            // Xử lý parent của danh mục
+            let parent = null;
+            if (category.parent) {
+              if (typeof category.parent === "object") {
+                parent = {
+                  id: category.parent._id || "",
+                  name: category.parent.name || "",
+                  slug: category.parent.slug || "",
+                };
+              } else if (typeof category.parent === "string") {
+                parent = {
+                  id: category.parent,
+                  name: "Danh mục cha",
+                  slug: "",
+                };
+              }
+            }
 
-      // Xử lý parent
-      if (product.category_id.parent) {
-        if (typeof product.category_id.parent === "object") {
-          categoryInfo.parent = {
-            id: product.category_id.parent._id || "",
-            name: product.category_id.parent.name || "",
-            slug: product.category_id.parent.slug || "",
-          };
-        } else if (typeof product.category_id.parent === "string") {
-          // Nếu parent chỉ là ID nhưng không được populate
-          categoryInfo.parent = {
-            id: product.category_id.parent,
-            name: "Danh mục cha",
-            slug: "",
-          };
-        }
-      }
-    }
+            return {
+              id: category._id || "",
+              name: category.name || "",
+              slug: category.slug || "",
+              parent: parent,
+            };
+          })
+          .filter(Boolean)
+      : [];
+
+    // Xử lý thông tin chất liệu
+    const materials = Array.isArray(product.material_id)
+      ? product.material_id
+          .map((material) => {
+            if (!material) return null;
+            return {
+              id: material._id || "",
+              name: material.name || "",
+              slug: material.slug || "",
+            };
+          })
+          .filter(Boolean)
+      : [];
+
+    // Lấy tên của material đầu tiên cho mô tả (nếu có)
+    const primaryMaterialName = materials.length > 0 ? materials[0].name : "";
 
     return {
       id: product._id.toString(),
       name: product.name,
       description: {
         header: header,
-        material: product.material_id?.name || "",
+        material: primaryMaterialName,
         style: product.style || "Regular fit",
         responsible: product.responsible || "",
         features: product.features || "",
@@ -748,11 +838,8 @@ class ProductService {
         currency: product.price?.currency || "VND",
       },
       comment: formattedComments,
-      category: categoryInfo,
-      material: {
-        name: product.material_id?.name || "",
-        slug: product.material_id?.slug || "",
-      },
+      categories: categories,
+      materials: materials,
       tagIsNew: product.tagIsNew || false,
       variants: formattedVariants,
       slug: product.slug || "",
