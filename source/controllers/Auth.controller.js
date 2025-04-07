@@ -3,17 +3,20 @@ import { AuthService } from "../services/index.js";
 
 class AuthController {
   login = CatchError(async (req, res) => {
-    const { email, password } = req.body;
+    const { email, phone_number, password } = req.body;
+    const loginIdentifier = email || phone_number;
 
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers["user-agent"];
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email và mật khẩu là bắt buộc" });
+    if (!loginIdentifier || !password) {
+      return res.status(400).json({
+        message: "Vui lòng cung cấp email/số điện thoại và mật khẩu",
+      });
     }
 
     const { accessToken, refreshToken, user } = await AuthService.login(
-      email,
+      loginIdentifier,
       password,
       ipAddress,
       userAgent

@@ -4,13 +4,28 @@ import UserService from "./user.service.js";
 import { hashPassword, comparePassword } from "../utils/index.js";
 
 class AuthService {
-  async login(email, password, ipAddress, userAgent) {
-    if (!email || !password) {
-      throw new Error("Email và mật khẩu là bắt buộc");
+  async login(identifier, password, ipAddress, userAgent) {
+    if (!identifier || !password) {
+      throw new Error("Vui lòng cung cấp email/số điện thoại và mật khẩu");
     }
 
-    // Tìm người dùng theo email
-    const user = await User.findOne({ email });
+    // Kiểm tra xem identifier là email hay số điện thoại
+    const isEmail = identifier.includes("@");
+
+    // Log để debug
+    console.log("Login attempt with:", { identifier, isEmail });
+
+    // Tìm người dùng theo email hoặc số điện thoại
+    let user;
+    if (isEmail) {
+      user = await User.findOne({ email: identifier });
+    } else {
+      user = await User.findOne({ phone_number: identifier });
+    }
+
+    // Log kết quả tìm kiếm
+    console.log("User found:", user ? "Yes" : "No");
+
     if (!user) {
       throw new Error("Thông tin đăng nhập không hợp lệ");
     }
@@ -44,11 +59,23 @@ class AuthService {
     };
   }
 
-  async register(userData, ipAddress, userAgent) {
-    const { username, email, password, fullName } = userData;
+  async register(userData) {
+    const {
+      username,
+      email,
+      password,
+      fullName,
+      phone_number,
+      ipAddress,
+      userAgent,
+      name,
+    } = userData;
 
     // Kiểm tra các trường bắt buộc
-    if (!username || !email || !password || !fullName) {
+    // Nếu có name từ controller, sử dụng name là fullName nếu không có fullName
+    const userFullName = fullName || name;
+
+    if (!username || !email || !password || (!userFullName && !name)) {
       throw new Error("Tất cả các trường đều là bắt buộc");
     }
 
@@ -63,10 +90,18 @@ class AuthService {
       throw new Error("Mật khẩu phải có ít nhất 6 ký tự");
     }
 
-    // Kiểm tra người dùng đã tồn tại
+    // Kiểm tra người dùng đã tồn tại với email hoặc tên đăng nhập
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       throw new Error("Người dùng đã tồn tại");
+    }
+
+    // Kiểm tra số điện thoại đã tồn tại nếu được cung cấp
+    if (phone_number) {
+      const existingPhoneUser = await User.findOne({ phone_number });
+      if (existingPhoneUser) {
+        throw new Error("Số điện thoại đã được sử dụng");
+      }
     }
 
     // Mã hóa mật khẩu
@@ -77,7 +112,8 @@ class AuthService {
       username,
       email,
       password: hashedPassword,
-      fullName,
+      fullName: userFullName || name,
+      phone_number,
       role: 0, // Default role (user)
       type: "WEBSITE",
       status: 1, // Active
