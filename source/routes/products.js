@@ -18,6 +18,11 @@ router.get(
   publicApiLimiter,
   ProductController.getProductsByCategory
 );
+router.get(
+  "/category/slug/:slug",
+  publicApiLimiter,
+  ProductController.getProductsByCategorySlug
+);
 router.get("/slug/:slug", publicApiLimiter, ProductController.getProductBySlug);
 router.get("/", publicApiLimiter, ProductController.getAllProducts);
 router.get("/:id", publicApiLimiter, ProductController.getProductById);

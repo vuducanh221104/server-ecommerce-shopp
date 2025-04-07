@@ -205,3 +205,24 @@ GET {{baseUrl}}/products/search?q=áo sơ mi
 
 ### 5.11.5 Tìm kiếm không phân biệt chữ hoa/thường
 GET {{baseUrl}}/products/search?q=COOLMAX
+
+### 5.12 Lấy sản phẩm theo slug của danh mục
+GET {{baseUrl}}/products/category/slug/ao-polo
+
+### 5.12.1 Lấy sản phẩm theo danh mục Áo Polo
+GET {{baseUrl}}/products/category/slug/ao-polo
+
+### 5.12.2 Lấy sản phẩm theo danh mục Áo Sơ Mi
+GET {{baseUrl}}/products/category/slug/ao-so-mi
+
+### 5.12.3 Lấy sản phẩm theo danh mục Áo Thun
+GET {{baseUrl}}/products/category/slug/ao-thun
+
+### 5.12.4 Lấy sản phẩm theo danh mục Quần
+GET {{baseUrl}}/products/category/slug/quan
+
+### 5.12.5 Lấy sản phẩm theo danh mục với phân trang
+GET {{baseUrl}}/products/category/slug/ao-polo?page=1&limit=5
+
+### 5.12.6 Lấy sản phẩm theo danh mục không tồn tại
+GET {{baseUrl}}/products/category/slug/danh-muc-khong-ton-tai

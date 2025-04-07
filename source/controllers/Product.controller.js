@@ -394,6 +394,48 @@ class ProductController {
       product,
     });
   });
+
+  getProductsByCategorySlug = CatchError(async (req, res) => {
+    const { slug } = req.params;
+    const options = {
+      page: req.query.page,
+      limit: req.query.limit,
+    };
+
+    const result = await ProductService.getProductsByCategorySlug(
+      slug,
+      options
+    );
+
+    if (!result.category) {
+      return res.status(404).json({
+        message: "Không tìm thấy danh mục",
+        products: [],
+        pagination: result.pagination,
+      });
+    }
+
+    // Định dạng thông tin danh mục giống như trong mảng categories của sản phẩm
+    const formattedCategory = {
+      id: result.category._id,
+      name: result.category.name,
+      slug: result.category.slug,
+      parent: result.category.parent
+        ? {
+            id: result.category.parent._id,
+            name: result.category.parent.name,
+            slug: result.category.parent.slug,
+          }
+        : null,
+    };
+
+    return res.status(200).json({
+      message: "Lấy danh sách sản phẩm theo danh mục thành công",
+      products: result.products,
+      category: formattedCategory,
+      pagination: result.pagination,
+    });
+  });
 }
 
 export default new ProductController();

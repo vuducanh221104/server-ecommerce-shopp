@@ -698,6 +698,59 @@ class ProductService {
     return this.formatProduct(product);
   }
 
+  async getProductsByCategorySlug(slug, options = {}) {
+    const page = parseInt(options.page) || 1;
+    const limit = parseInt(options.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Tìm danh mục dựa trên slug
+    const category = await Category.findOne({ slug }).populate(
+      "parent",
+      "name slug _id"
+    );
+
+    if (!category) {
+      return {
+        products: [],
+        pagination: this.createPaginationInfo(0, page, limit),
+        category: null,
+      };
+    }
+
+    // Tìm tất cả sản phẩm trong danh mục này
+    const query = { category_id: category._id };
+    const totalProducts = await Product.countDocuments(query);
+
+    // Lấy sản phẩm với phân trang
+    const products = await Product.find(query)
+      .populate("category_id", "name slug parent")
+      .populate("material_id", "name slug")
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    // Format sản phẩm để trả về
+    const formattedProducts = products.map((product) =>
+      this.formatProduct(product)
+    );
+
+    return {
+      products: formattedProducts,
+      pagination: this.createPaginationInfo(totalProducts, page, limit),
+      category,
+    };
+  }
+
+  createPaginationInfo(total, page, limit) {
+    const totalPages = Math.ceil(total / limit);
+    return {
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages,
+    };
+  }
+
   formatProduct(product) {
     if (!product) return null;
 
