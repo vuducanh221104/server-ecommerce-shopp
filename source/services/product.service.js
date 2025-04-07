@@ -713,6 +713,7 @@ class ProductService {
       if (product.category_id.parent) {
         if (typeof product.category_id.parent === "object") {
           categoryInfo.parent = {
+            id: product.category_id.parent._id || "",
             name: product.category_id.parent.name || "",
             slug: product.category_id.parent.slug || "",
           };
