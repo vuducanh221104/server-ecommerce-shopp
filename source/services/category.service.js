@@ -1,13 +1,21 @@
 import { Category, Product } from "../models/index.js";
+import slugify from "slugify";
 
 class CategoryService {
   createSlug(name) {
-    return name
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    if (!name) return "";
+
+    // Thiết lập các tùy chọn cho slugify
+    const options = {
+      replacement: "-", // thay thế khoảng trắng bằng dấu gạch ngang
+      remove: undefined, // không xóa ký tự nào (mặc định)
+      lower: true, // chuyển thành chữ thường
+      strict: false, // không áp dụng chế độ strict để giữ các ký tự tiếng Việt
+      locale: "vi", // sử dụng locale tiếng Việt
+      trim: true, // cắt bỏ khoảng trắng ở đầu và cuối
+    };
+
+    return slugify(name, options);
   }
 
   async createCategory(categoryData) {

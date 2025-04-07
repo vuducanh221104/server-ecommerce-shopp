@@ -168,8 +168,7 @@ GET {{baseUrl}}/products/slug/ao-so-mi-nam-linen-thoang-khi
 ### 3.10 Lấy sản phẩm theo search
 GET {{baseUrl}}/products/search?q=linen
 
-### 3.11 Test search API với nhiều query
-### 3.11.1 Tìm kiếm theo tên sản phẩm
+### 3.11 Test search API với nhieu query
 GET {{baseUrl}}/products/search?q=Polo
 
 ### 3.11.2 Tìm kiếm theo chất liệu

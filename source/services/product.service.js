@@ -1,4 +1,5 @@
 import { Product, Category, Material } from "../models/index.js";
+import slugify from "slugify";
 
 class ProductService {
   async getProducts(filters = {}) {
@@ -44,8 +45,15 @@ class ProductService {
 
     // Thực hiện truy vấn với populate danh mục
     const products = await Product.find(query)
-      .populate("category_id", "name slug _id")
-      .populate("material_id", "name _id")
+      .populate({
+        path: "category_id",
+        select: "name slug _id parent",
+        populate: {
+          path: "parent",
+          select: "name slug _id",
+        },
+      })
+      .populate("material_id", "name slug _id")
       .populate({
         path: "price",
         select: "original discount discountQuantity currency",
@@ -113,7 +121,7 @@ class ProductService {
     const product = await Product.findOne({ slug })
       .populate({
         path: "category_id",
-        select: "name slug _id",
+        select: "name slug _id parent",
         populate: {
           path: "parent",
           select: "name slug _id",
@@ -136,6 +144,22 @@ class ProductService {
 
     if (!product) {
       return null;
+    }
+
+    // Kiểm tra xem danh mục có parent nhưng chưa được populate không
+    if (
+      product.category_id &&
+      product.category_id.parent &&
+      typeof product.category_id.parent === "object" &&
+      !product.category_id.parent.name
+    ) {
+      // Populate parent thủ công
+      const parentCategory = await Category.findById(
+        product.category_id.parent
+      );
+      if (parentCategory) {
+        product.category_id.parent = parentCategory;
+      }
     }
 
     return this.formatProduct(product);
@@ -234,8 +258,15 @@ class ProductService {
     };
 
     const products = await Product.find(searchQuery)
-      .populate("category_id", "name slug _id")
-      .populate("material_id", "name _id")
+      .populate({
+        path: "category_id",
+        select: "name slug _id parent",
+        populate: {
+          path: "parent",
+          select: "name slug _id",
+        },
+      })
+      .populate("material_id", "name slug _id")
       .populate({
         path: "price",
         select: "original discount discountQuantity currency",
@@ -267,21 +298,19 @@ class ProductService {
   }
 
   createSlug(name) {
-    // Chuẩn hóa dấu tiếng Việt trước
-    let slug = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (!name) return "";
 
-    // Chuyển Đ/đ thành D/d
-    slug = slug.replace(/[Đ]/g, "D").replace(/[đ]/g, "d");
+    // Thiết lập các tùy chọn cho slugify
+    const options = {
+      replacement: "-", // thay thế khoảng trắng bằng dấu gạch ngang
+      remove: undefined, // không xóa ký tự nào (mặc định)
+      lower: true, // chuyển thành chữ thường
+      strict: false, // không áp dụng chế độ strict để giữ các ký tự tiếng Việt
+      locale: "vi", // sử dụng locale tiếng Việt
+      trim: true, // cắt bỏ khoảng trắng ở đầu và cuối
+    };
 
-    // Loại bỏ ký tự đặc biệt và chuyển khoảng trắng thành dấu gạch ngang
-    slug = slug
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-
-    return slug;
+    return slugify(name, options);
   }
 
   async createProduct(productData, userId) {
@@ -669,6 +698,35 @@ class ProductService {
         }))
       : [];
 
+    // Xử lý thông tin danh mục và danh mục cha
+    let categoryInfo = {
+      parent: null,
+      name: "",
+      slug: "",
+    };
+
+    if (product.category_id) {
+      categoryInfo.name = product.category_id.name || "";
+      categoryInfo.slug = product.category_id.slug || "";
+
+      // Xử lý parent
+      if (product.category_id.parent) {
+        if (typeof product.category_id.parent === "object") {
+          categoryInfo.parent = {
+            name: product.category_id.parent.name || "",
+            slug: product.category_id.parent.slug || "",
+          };
+        } else if (typeof product.category_id.parent === "string") {
+          // Nếu parent chỉ là ID nhưng không được populate
+          categoryInfo.parent = {
+            id: product.category_id.parent,
+            name: "Danh mục cha",
+            slug: "",
+          };
+        }
+      }
+    }
+
     return {
       id: product._id.toString(),
       name: product.name,
@@ -689,16 +747,7 @@ class ProductService {
         currency: product.price?.currency || "VND",
       },
       comment: formattedComments,
-      category: {
-        parent: product.category_id?.parent
-          ? {
-              name: product.category_id.parent.name || "",
-              slug: product.category_id.parent.slug || "",
-            }
-          : null,
-        name: product.category_id?.name || "",
-        slug: product.category_id?.slug || "",
-      },
+      category: categoryInfo,
       material: {
         name: product.material_id?.name || "",
         slug: product.material_id?.slug || "",
