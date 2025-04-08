@@ -147,94 +147,65 @@ class UserService {
 
     const formattedCart =
       user.cart?.map((item) => {
-        const fullProduct = item.fullProductDetails || {};
-
         return {
           product: {
             id: item.product_id?.toString() || "",
-            name: item.name || fullProduct.name || "",
+            name: item.name || "",
             price: {
-              price: item.price || fullProduct.price?.original || 1790000,
-              originalPrice: fullProduct.price?.original || 199000,
-              discountQuantity: fullProduct.price?.discountQuantity || 10,
+              price: item.price || 0,
+              originalPrice: item.price || 0,
+              discountQuantity: item.discountQuantity || 0,
               currency: "VND",
             },
-            category: {
-              parent: {
-                name: fullProduct.category_id?.parent?.name || "Áo Nam",
-                slug: fullProduct.category_id?.parent?.slug || "ao-nam",
-              },
-              name: fullProduct.category_id?.name || "Áo Polo",
-              slug: fullProduct.category_id?.slug || "ao-polo",
-            },
-            material: {
-              name: fullProduct.material_id?.name || "Cotton",
-              slug: fullProduct.material_id?.slug || "cotton",
-            },
-            tagIsNew: fullProduct.tagIsNew || true,
-            variants: fullProduct.variants || [
-              {
-                name: "Tím",
-                sizes: [
-                  { size: "M", stock: 10 },
-                  { size: "L", stock: 30 },
-                  { size: "XL", stock: 100 },
-                ],
-              },
-            ],
-            colorThumbnail:
-              fullProduct.thumb ||
-              "https://media3.coolmate.me/cdn-cgi/image/width=100,height=100,quality=80,format=auto/uploads/December2024/ao-dat-tay-the-thao-1699-trang_(12).jpg",
-            images: fullProduct.images || [
-              "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2025/ao-thun-nu-chay-bo-core-tee-slimfit-11872-tim_85.jpg",
-              "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2025/ao-thun-nu-chay-bo-core-tee-slimfit-12012-tim_7.jpg",
-              "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2025/ao-thun-nu-chay-bo-core-tee-slimfit-12012-tim_7.jpg",
-            ],
-            slug: item.slug || fullProduct.slug || "ao-polo-nam-pique-cotton",
-            created_at: fullProduct.createdAt
-              ? fullProduct.createdAt.toISOString()
-              : "2024-08-04T04:27:43.076Z",
-            updated_at: fullProduct.updatedAt
-              ? fullProduct.updatedAt.toISOString()
-              : "2024-11-29T15:50:18.958Z",
+            category: item.category_id
+              ? {
+                  parent: {
+                    name: item.category_id.parent?.name || "",
+                    slug: item.category_id.parent?.slug || "",
+                  },
+                  name: item.category_id.name || "",
+                  slug: item.category_id.slug || "",
+                }
+              : null,
+            material: item.material_id
+              ? {
+                  name: item.material_id.name || "",
+                  slug: item.material_id.slug || "",
+                }
+              : null,
+            tagIsNew: item.tagIsNew || false,
+            variants: item.variants || [],
+            colorThumbnail: item.colorThumbnail || "",
+            images: item.images || [],
+            slug: item.slug || "",
+            created_at: item.createdAt?.toISOString() || "",
+            updated_at: item.updatedAt?.toISOString() || "",
           },
-          quantity: item.quantity || 2,
+          quantity: item.quantity || 0,
         };
       }) || [];
 
-    const formattedAddress = user.address
-      ? {
-          street: user.address.street || "25 Xuân Thủy",
-          ward: user.address.ward || "Thảo Điền",
-          district: user.address.district || "Quận 2",
-          city: user.address.city || "Hồ Chí Minh",
-          country: user.address.country || "Việt Nam",
-        }
-      : {
-          street: "25 Xuân Thủy",
-          ward: "Thảo Điền",
-          district: "Quận 2",
-          city: "Hồ Chí Minh",
-          country: "Việt Nam",
-        };
-
     return {
       _id: user._id.toString(),
-      user_name: user.username || "ducanh2211",
-      email: user.email || "vng1396@gmail.com",
-      password: user.password ? "HACVASFABSFN1213*...*!@ADSFHSAG" : "",
-      full_name: user.fullName || "Vũ Đức Anh",
+      user_name: user.user_name || "",
+      email: user.email || "",
+      password: user.password || "",
+      full_name: user.full_name || "",
       type: user.type || "WEBSITE",
-      phone_number: user.phone_number || "0377775528",
-      address: formattedAddress,
-      date_of_birth: user.dateOfBirth || "",
+      phone_number: user.phone_number || "",
+      address: {
+        street: user.address?.street || "",
+        ward: user.address?.ward || "",
+        district: user.address?.district || "",
+        city: user.address?.city || "",
+        country: user.address?.country || "",
+      },
+      date_of_birth: user.date_of_birth || "",
       gender: user.gender || "",
       avatar: user.avatar || "",
       role: user.role || 0,
       status: user.status || 1,
       cart: formattedCart,
-      created_at: user.createdAt ? user.createdAt.toISOString() : "",
-      updated_at: user.updatedAt ? user.updatedAt.toISOString() : "",
     };
   }
 }

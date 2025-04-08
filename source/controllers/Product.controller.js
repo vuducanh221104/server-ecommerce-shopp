@@ -41,11 +41,6 @@ class ProductController {
 
   createProduct = CatchError(async (req, res) => {
     const productData = req.body;
-    console.log(
-      "Request body in createProduct:",
-      JSON.stringify(productData, null, 2)
-    );
-
     const {
       name,
       description,
@@ -81,8 +76,25 @@ class ProductController {
       });
     }
 
+    // Validate số lượng và giá
+    if (total_quantity < 0) {
+      return res.status(400).json({
+        status: "error",
+        message: "Số lượng sản phẩm không hợp lệ",
+      });
+    }
+
+    if (
+      price.original < 0 ||
+      (price.discountQuantity && price.discountQuantity < 0)
+    ) {
+      return res.status(400).json({
+        status: "error",
+        message: "Giá sản phẩm không hợp lệ",
+      });
+    }
+
     // Tạo sản phẩm mới với ProductService
-    // Truyền req.user?._id để lưu người tạo sản phẩm (nếu cần)
     const newProduct = await ProductService.createProduct(
       productData,
       req.user?._id
@@ -124,11 +136,17 @@ class ProductController {
 
   getProductsByCategory = CatchError(async (req, res) => {
     const { id: categoryId } = req.params;
-    const options = {
-      page: req.query.page,
-      limit: req.query.limit,
-    };
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
 
+    if (page < 1 || limit < 1) {
+      return res.status(400).json({
+        status: "error",
+        message: "Tham số phân trang không hợp lệ",
+      });
+    }
+
+    const options = { page, limit };
     const result = await ProductService.getProductsByCategory(
       categoryId,
       options
@@ -136,31 +154,23 @@ class ProductController {
 
     if (!result.category) {
       return res.status(404).json({
+        status: "error",
         message: "Không tìm thấy danh mục",
-        products: [],
-        pagination: result.pagination,
+        data: {
+          products: [],
+          pagination: result.pagination,
+        },
       });
     }
 
-    // Định dạng thông tin danh mục giống như trong mảng categories của sản phẩm
-    const formattedCategory = {
-      id: result.category._id,
-      name: result.category.name,
-      slug: result.category.slug,
-      parent: result.category.parent
-        ? {
-            id: result.category.parent._id,
-            name: result.category.parent.name,
-            slug: result.category.parent.slug,
-          }
-        : null,
-    };
-
     return res.status(200).json({
+      status: "success",
       message: "Lấy danh sách sản phẩm theo danh mục thành công",
-      products: result.products,
-      category: formattedCategory,
-      pagination: result.pagination,
+      data: {
+        products: result.products,
+        category: result.category,
+        pagination: result.pagination,
+      },
     });
   });
 
@@ -295,106 +305,21 @@ class ProductController {
 
   getProductBySlug = CatchError(async (req, res) => {
     const { slug } = req.params;
-
-    // Hardcode mẫu dữ liệu cho mục đích test
-    if (slug === "test-product") {
-      return res.status(200).json({
-        message: "Lấy thông tin sản phẩm thành công",
-        product: {
-          id: "1",
-          name: "Áo Polo Nam Pique Cotton",
-          description: {
-            header: {
-              material: "100% Cotton",
-              style: "Regular fit, người mẫu cao 186 - 77kg, mặc size 2XL",
-              responsible: "Đi chơi, đi chơi học, đi làm ngay",
-              features:
-                "Kiểu dệt Pique giúp áo thoáng khí, chất hòan thiện giúp ít vò lộn",
-              image:
-                "https://mcdn.coolmate.me/image/March2023/ao-polo-nam-pique-cotton-thumb-1.png",
-            },
-            body: '**Áo polo nam Pique Cotton** với chất vải cotton 100% cao cấp, mềm mại và thoáng khí tối ưu, đảm bảo mang lại trải nghiệm mặc thoải mái nhất cho chàng suốt cả ngày dài.\n\nĐây có thể là chiếc áo chủ đạo trong tủ đồ của mình. Hãy cùng Coolmate tìm đáp án cho câu hỏi: "Vì sao nên mua ngay chiếc áo này?"\n\n![](https://mcdn.coolmate.me/image/August2023/mceclip6_66.jpg)\n\n**Đặc điểm nổi bật Áo polo nam Pique Cotton**\n\nÁo polo nam chất liệu pique cotton 100% cao cấp, mềm mại và thoáng khí tối ưu, đảm bảo mang lại trải nghiệm mặc thoải mái nhất cho chàng suốt cả ngày dài.',
-          },
-          price: {
-            price: 179000,
-            originalPrice: 199000,
-            discountQuantity: 10,
-            currency: "VND",
-          },
-          comment: [
-            {
-              name: "Đức Anh",
-              username: "ducanh2211",
-              email: "vng1596@gmail.com",
-              rating: 5,
-              content: "Tốt 0k",
-              replyContentAdmin: "Cảm ơn anh ạ.",
-              created_at: "2024-08-04T04:27:43.876Z",
-              updated_at: "2024-11-27T15:50:18.958Z",
-            },
-            {
-              name: "Trà",
-              username: "tratg",
-              email: "tra@gmail.com",
-              rating: 4,
-              content: "Xấu",
-              replyContentAdmin: "Xin lỗi và trải nghiệm chưa tròn ý.",
-              created_at: "2024-08-04T04:27:43.876Z",
-              updated_at: "2024-11-27T15:50:18.958Z",
-            },
-          ],
-          category: {
-            parent: {
-              name: "Áo Nam",
-              slug: "ao-nam",
-            },
-            name: "Áo Polo",
-            slug: "ao-polo",
-          },
-          material: {
-            name: "Cotton",
-            slug: "cotton",
-          },
-          tagIsNew: true,
-          variants: [
-            {
-              name: "Tím",
-              colorThumbnail:
-                "https://media3.coolmate.me/cdn-cgi/image/width=160,height=160,quality=80,format=auto/uploads/December2024/ao-dai-tay-the-thao-1699-trang_(12).jpg",
-              images: [
-                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-11872-tim_85.jpg",
-                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-12012-tim_7.jpg",
-                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-12012-tim_7.jpg",
-              ],
-            },
-            {
-              name: "Trắng",
-              colorThumbnail:
-                "https://media3.coolmate.me/cdn-cgi/image/width=160,height=160,quality=80,format=auto/uploads/December2024/ao-dai-tay-the-thao-1699-trang_(12).jpg",
-              images: [
-                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-11872-white.jpg",
-                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-12012-white.jpg",
-                "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-nu-chay-bo-core-tee-slimfit-12012-white.jpg",
-              ],
-            },
-          ],
-          slug: "ao-polo-nam-pique-cotton",
-          created_at: "2024-08-04T04:27:43.876Z",
-          updated_at: "2024-11-27T15:50:18.958Z",
-        },
-      });
-    }
-
     const product = await ProductService.getProductBySlug(slug);
+
     if (!product) {
       return res.status(404).json({
+        status: "error",
         message: "Không tìm thấy sản phẩm",
       });
     }
 
     return res.status(200).json({
+      status: "success",
       message: "Lấy thông tin sản phẩm thành công",
-      product,
+      data: {
+        product,
+      },
     });
   });
 

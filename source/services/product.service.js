@@ -23,10 +23,15 @@ class ProductService {
       query.category_id = category;
     }
 
-    // Lọc theo giá - cần join với model Price
+    // Lọc theo giá
     if (minPrice || maxPrice) {
-      // Lọc giá sẽ cần thực hiện aggregate với join Price
-      // Đối với ví dụ đơn giản, tạm thời bỏ qua việc lọc theo giá
+      query.price = {};
+      if (minPrice) query.price.original = { $gte: parseInt(minPrice) };
+      if (maxPrice)
+        query.price.original = {
+          ...query.price.original,
+          $lte: parseInt(maxPrice),
+        };
     }
 
     // Tìm kiếm theo tên sản phẩm
@@ -34,9 +39,8 @@ class ProductService {
       query.name = { $regex: search, $options: "i" };
     }
 
-    // Lọc sản phẩm nổi bật (nếu có trường này)
+    // Lọc sản phẩm nổi bật
     if (isFeatured !== undefined) {
-      // Nếu model của bạn có trường isFeatured
       query.isFeatured = isFeatured;
     }
 
@@ -54,10 +58,6 @@ class ProductService {
         },
       })
       .populate("material_id", "name slug _id")
-      .populate({
-        path: "price",
-        select: "original discount discountQuantity currency",
-      })
       .populate({
         path: "variants",
         select: "name color colorThumbnail images sizes",
@@ -821,30 +821,17 @@ class ProductService {
       ? product.category_id
           .map((category) => {
             if (!category) return null;
-
-            // Xử lý parent của danh mục
-            let parent = null;
-            if (category.parent) {
-              if (typeof category.parent === "object") {
-                parent = {
-                  id: category.parent._id || "",
-                  name: category.parent.name || "",
-                  slug: category.parent.slug || "",
-                };
-              } else if (typeof category.parent === "string") {
-                parent = {
-                  id: category.parent,
-                  name: "Danh mục cha",
-                  slug: "",
-                };
-              }
-            }
-
             return {
-              id: category._id || "",
+              id: category._id.toString(),
               name: category.name || "",
               slug: category.slug || "",
-              parent: parent,
+              parent: category.parent
+                ? {
+                    id: category.parent._id.toString(),
+                    name: category.parent.name || "",
+                    slug: category.parent.slug || "",
+                  }
+                : null,
             };
           })
           .filter(Boolean)
@@ -856,7 +843,7 @@ class ProductService {
           .map((material) => {
             if (!material) return null;
             return {
-              id: material._id || "",
+              id: material._id.toString(),
               name: material.name || "",
               slug: material.slug || "",
             };
@@ -864,44 +851,38 @@ class ProductService {
           .filter(Boolean)
       : [];
 
-    // Chuẩn bị dữ liệu description
-    let descriptionContent = "";
-    let headerObj = {};
+    // Chuẩn hóa description
+    let description = {
+      header: {
+        material: materials.length > 0 ? materials[0].name : "",
+        style: "Regular fit",
+        responsible: "",
+        features: "",
+        image: product.thumb || "",
+      },
+      body: {
+        content: "",
+      },
+    };
 
-    // Xử lý thông tin material cho header
-    const materialName = materials.length > 0 ? materials[0].name : "";
-
-    // Xử lý nội dung description
     if (product.description) {
-      try {
-        // Thử parse nếu là JSON string
-        const parsedDesc =
-          typeof product.description === "string"
-            ? JSON.parse(product.description)
-            : product.description;
-
-        if (typeof parsedDesc === "object") {
-          if (parsedDesc.header) headerObj = parsedDesc.header;
-          if (parsedDesc.body) descriptionContent = parsedDesc.body;
-        } else {
-          // Nếu không phải JSON object, xử lý như text thông thường
-          descriptionContent = product.description;
-        }
-      } catch (e) {
-        // Nếu không parse được JSON, xử lý như text thông thường
-        descriptionContent = product.description;
+      if (typeof product.description === "string") {
+        description.body.content = product.description;
+      } else if (typeof product.description === "object") {
+        description = {
+          header: {
+            ...description.header,
+            ...(product.description.header || {}),
+          },
+          body: {
+            content:
+              product.description.body?.content ||
+              product.description.content ||
+              "",
+          },
+        };
       }
     }
-
-    // Tạo đối tượng header đầy đủ
-    const header = {
-      ...headerObj,
-      material: materialName,
-      style: product.style || "Regular fit",
-      responsible: product.responsible || "",
-      features: product.features || "",
-      image: product.thumb || "",
-    };
 
     // Định dạng comments
     const formattedComments = product.comments
@@ -934,12 +915,7 @@ class ProductService {
     return {
       id: product._id.toString(),
       name: product.name,
-      description: {
-        header: header,
-        body: {
-          content: descriptionContent,
-        },
-      },
+      description,
       price: {
         price: product.price?.original || 0,
         originalPrice: product.price?.original || 0,

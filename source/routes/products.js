@@ -28,10 +28,10 @@ router.get("/", publicApiLimiter, ProductController.getAllProducts);
 router.get("/:id", publicApiLimiter, ProductController.getProductById);
 
 // Routes yêu cầu quyền admin
-router.post("/", ProductController.createProduct);
-router.put("/:id", ProductController.updateProduct);
-router.delete("/:id", ProductController.deleteProduct);
-router.post("/:id/variants", ProductController.addVariantToProduct);
-router.patch("/:id/stock", ProductController.updateStock);
+router.post("/", isAdmin, ProductController.createProduct);
+router.put("/:id", isAdmin, ProductController.updateProduct);
+router.delete("/:id", isAdmin, ProductController.deleteProduct);
+router.post("/:id/variants", isAdmin, ProductController.addVariantToProduct);
+router.patch("/:id/stock", isAdmin, ProductController.updateStock);
 
 export default router;
