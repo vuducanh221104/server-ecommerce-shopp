@@ -46,21 +46,21 @@ class ProductController {
       JSON.stringify(productData, null, 2)
     );
 
-    // Lấy các trường từ request body
     const {
       name,
-      slug,
       description,
       category_id,
       material_id,
       price,
       total_quantity,
+      variants,
+      tagIsNew,
+      thumbnail,
     } = productData;
 
-    // Chỉ kiểm tra các trường thực sự cần thiết
+    // Chỉ kiểm tra các trường thực sự bắt buộc theo model
     if (
       !name ||
-      !slug ||
       !description ||
       !category_id ||
       !material_id ||
@@ -72,7 +72,6 @@ class ProductController {
         message: "Thiếu thông tin sản phẩm bắt buộc",
         missingFields: {
           name: !name,
-          slug: !slug,
           description: !description,
           category_id: !category_id,
           material_id: !material_id,
@@ -83,7 +82,11 @@ class ProductController {
     }
 
     // Tạo sản phẩm mới với ProductService
-    const newProduct = await ProductService.createProduct(productData);
+    // Truyền req.user?._id để lưu người tạo sản phẩm (nếu cần)
+    const newProduct = await ProductService.createProduct(
+      productData,
+      req.user?._id
+    );
 
     return res.status(201).json({
       status: "success",

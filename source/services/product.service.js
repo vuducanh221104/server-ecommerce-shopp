@@ -60,7 +60,7 @@ class ProductService {
       })
       .populate({
         path: "variants",
-        select: "name color colorThumbnail images",
+        select: "name color colorThumbnail images sizes",
       })
       .sort({ [sort]: order === "desc" ? -1 : 1 })
       .skip(skip)
@@ -279,7 +279,7 @@ class ProductService {
       })
       .populate({
         path: "variants",
-        select: "name color colorThumbnail images",
+        select: "name color colorThumbnail images sizes",
       })
       .skip(skip)
       .limit(parseInt(limit))
@@ -320,10 +320,19 @@ class ProductService {
   }
 
   async createProduct(productData, userId) {
-    const { name, description, price, category_id, material_id, variants } =
-      productData;
+    const {
+      name,
+      description,
+      price,
+      category_id,
+      material_id,
+      variants,
+      total_quantity,
+      tagIsNew,
+      thumb,
+    } = productData;
 
-    if (!name || !description || !price) {
+    if (!name || !description || !price || !total_quantity) {
       throw new Error("Thiếu thông tin sản phẩm bắt buộc");
     }
 
@@ -367,25 +376,41 @@ class ProductService {
       materialIds.push(material_id);
     }
 
-    // Tạo slug từ tên sản phẩm
-    const slug = this.createSlug(name);
+    // Tạo hoặc sử dụng slug từ request
+    let slug = productData.slug || this.createSlug(name);
 
     // Kiểm tra slug không trùng lặp
     const existingProduct = await Product.findOne({ slug });
     if (existingProduct) {
-      throw new Error("Tên sản phẩm đã tồn tại");
+      // Nếu slug đã tồn tại, thêm timestamp để tạo slug duy nhất
+      slug = `${slug}-${Date.now()}`;
     }
 
+    // Xử lý giá
+    const productPrice = {
+      original: price.original || price,
+      discount: price.discount || 0,
+      discountQuantity: price.discountQuantity || 0,
+      currency: price.currency || "VND",
+    };
+
     // Xử lý biến thể và tính tổng số lượng
-    let totalQuantity = 0;
+    let calculatedTotalQuantity = total_quantity;
     let processedVariants = [];
 
     if (variants && Array.isArray(variants)) {
+      // Tính tổng số lượng từ các biến thể nếu không có total_quantity
+      if (!total_quantity) {
+        calculatedTotalQuantity = 0;
+      }
+
       processedVariants = variants.map((variant) => {
         // Xử lý sizes trong mỗi variant
         const sizes =
           variant.sizes?.map((size) => {
-            totalQuantity += size.stock || 0;
+            if (!total_quantity) {
+              calculatedTotalQuantity += size.stock || 0;
+            }
             return {
               size: size.size,
               stock: size.stock || 0,
@@ -393,7 +418,7 @@ class ProductService {
           }) || [];
 
         return {
-          name: variant.name || "",
+          name: variant.name || variant.color || "",
           color: variant.color || "",
           colorThumbnail: variant.colorThumbnail || "",
           sizes,
@@ -402,24 +427,49 @@ class ProductService {
       });
     }
 
-    // Tạo sản phẩm mới
-    const newProduct = await Product.create({
+    // Xử lý comments nếu có
+    let processedComments = [];
+    if (productData.comments && Array.isArray(productData.comments)) {
+      processedComments = productData.comments.map((comment) => ({
+        ...comment,
+        username: comment.username || comment.user_name || "Anonymous User",
+        avatar: comment.avatar || "",
+        createdAt: comment.createdAt || new Date(),
+        updatedAt: comment.updatedAt || new Date(),
+      }));
+    }
+
+    // Tạo đối tượng sản phẩm
+    const productObject = {
       name,
-      description,
       slug,
-      price: {
-        original: price.original,
-        discountQuantity: price.discountQuantity || 0,
-        currency: price.currency || "VND",
-      },
+      description,
+      price: productPrice,
       category_id: categoryIds,
       material_id: materialIds,
+      total_quantity: calculatedTotalQuantity,
       variants: processedVariants,
-      total_quantity: totalQuantity,
-      created_by: userId,
-    });
+      tagIsNew: tagIsNew !== undefined ? tagIsNew : true,
+      thumb: thumb || "",
+      comments: processedComments, // Sử dụng comments đã xử lý
+    };
 
-    return this.formatProduct(newProduct);
+    // Tạo sản phẩm mới
+    const newProduct = await Product.create(productObject);
+
+    // Populate các trường cần thiết và format kết quả
+    const populatedProduct = await Product.findById(newProduct._id)
+      .populate({
+        path: "category_id",
+        select: "name slug _id parent",
+        populate: {
+          path: "parent",
+          select: "name slug _id",
+        },
+      })
+      .populate("material_id", "name slug _id");
+
+    return this.formatProduct(populatedProduct);
   }
 
   async updateProduct(id, updateData, userId) {
@@ -503,6 +553,18 @@ class ProductService {
         currency:
           updateData.price.currency || currentProduct.price?.currency || "VND",
       };
+    }
+
+    // Xử lý cập nhật comments nếu được cung cấp
+    if (updateData.comments && Array.isArray(updateData.comments)) {
+      // Thiết lập các trường timestamps và đảm bảo có username và avatar
+      updateData.comments = updateData.comments.map((comment) => ({
+        ...comment,
+        username: comment.username || comment.user_name || "Anonymous User",
+        avatar: comment.avatar || "",
+        createdAt: comment.createdAt || new Date(),
+        updatedAt: comment.updatedAt || new Date(),
+      }));
     }
 
     // Xử lý cập nhật variants
@@ -754,72 +816,6 @@ class ProductService {
   formatProduct(product) {
     if (!product) return null;
 
-    // Xử lý description để chia thành header và body
-    let header = {};
-    let body = "";
-
-    if (product.description) {
-      try {
-        // Thử parse nếu là JSON string
-        const descObj =
-          typeof product.description === "string"
-            ? JSON.parse(product.description)
-            : product.description;
-
-        if (typeof descObj === "object") {
-          header = descObj.header || {};
-          body = descObj.body || "";
-        } else {
-          // Nếu không phải JSON object, xử lý như text thông thường
-          const parts = product.description.split("\n\n");
-          if (parts.length > 1) {
-            header = { text: parts[0] };
-            body = parts.slice(1).join("\n\n");
-          } else {
-            body = product.description;
-          }
-        }
-      } catch (e) {
-        // Nếu không parse được JSON, xử lý như text thông thường
-        const parts = product.description.split("\n\n");
-        if (parts.length > 1) {
-          header = { text: parts[0] };
-          body = parts.slice(1).join("\n\n");
-        } else {
-          body = product.description;
-        }
-      }
-    }
-
-    // Định dạng comments
-    const formattedComments = product.comments
-      ? product.comments.map((comment) => {
-          return {
-            name: comment.user_name || comment.user_id?.username || "",
-            username: comment.user_id?.username || "",
-            email: comment.user_id?.email || "",
-            rating: comment.rating || 5,
-            content: comment.content || "",
-            replyContentAdmin: comment.replyContentAdmin || "",
-            created_at: comment.createdAt
-              ? comment.createdAt.toISOString()
-              : "",
-            updated_at: comment.updatedAt
-              ? comment.updatedAt.toISOString()
-              : "",
-          };
-        })
-      : [];
-
-    // Xử lý variants để trả về định dạng như trong hình
-    const formattedVariants = product.variants
-      ? product.variants.map((variant) => ({
-          name: variant.name || "",
-          colorThumbnail: variant.colorThumbnail || "",
-          images: variant.images || [],
-        }))
-      : [];
-
     // Xử lý thông tin các danh mục
     const categories = Array.isArray(product.category_id)
       ? product.category_id
@@ -868,22 +864,82 @@ class ProductService {
           .filter(Boolean)
       : [];
 
-    // Lấy tên của material đầu tiên cho mô tả (nếu có)
-    const primaryMaterialName = materials.length > 0 ? materials[0].name : "";
+    // Chuẩn bị dữ liệu description
+    let descriptionContent = "";
+    let headerObj = {};
 
+    // Xử lý thông tin material cho header
+    const materialName = materials.length > 0 ? materials[0].name : "";
+
+    // Xử lý nội dung description
+    if (product.description) {
+      try {
+        // Thử parse nếu là JSON string
+        const parsedDesc =
+          typeof product.description === "string"
+            ? JSON.parse(product.description)
+            : product.description;
+
+        if (typeof parsedDesc === "object") {
+          if (parsedDesc.header) headerObj = parsedDesc.header;
+          if (parsedDesc.body) descriptionContent = parsedDesc.body;
+        } else {
+          // Nếu không phải JSON object, xử lý như text thông thường
+          descriptionContent = product.description;
+        }
+      } catch (e) {
+        // Nếu không parse được JSON, xử lý như text thông thường
+        descriptionContent = product.description;
+      }
+    }
+
+    // Tạo đối tượng header đầy đủ
+    const header = {
+      ...headerObj,
+      material: materialName,
+      style: product.style || "Regular fit",
+      responsible: product.responsible || "",
+      features: product.features || "",
+      image: product.thumb || "",
+    };
+
+    // Định dạng comments
+    const formattedComments = product.comments
+      ? product.comments.map((comment) => ({
+          user_id: comment.user_id || "",
+          rating: comment.rating || 5,
+          content: comment.content || "",
+          replyContentAdmin: comment.replyContentAdmin || "",
+          created_at: comment.createdAt
+            ? comment.createdAt.toISOString()
+            : new Date().toISOString(),
+          updated_at: comment.updatedAt
+            ? comment.updatedAt.toISOString()
+            : new Date().toISOString(),
+        }))
+      : [];
+
+    // Xử lý variants
+    const formattedVariants = product.variants
+      ? product.variants.map((variant) => ({
+          name: variant.name || "",
+          color: variant.color || "",
+          colorThumbnail: variant.colorThumbnail || "",
+          images: variant.images || [],
+          sizes: variant.sizes || [],
+        }))
+      : [];
+
+    // Tạo đối tượng sản phẩm đã format
     return {
       id: product._id.toString(),
       name: product.name,
       description: {
         header: header,
-        material: primaryMaterialName,
-        style: product.style || "Regular fit",
-        responsible: product.responsible || "",
-        features: product.features || "",
-        image: product.thumb || "",
-        body: body,
+        body: {
+          content: descriptionContent,
+        },
       },
-      body: body,
       price: {
         price: product.price?.original || 0,
         originalPrice: product.price?.original || 0,
@@ -891,10 +947,9 @@ class ProductService {
         currency: product.price?.currency || "VND",
       },
       comment: formattedComments,
-      categories: categories,
-      materials: materials,
-      tagIsNew: product.tagIsNew || false,
+      category: categories.length > 0 ? categories[0] : null,
       variants: formattedVariants,
+      tagIsNew: product.tagIsNew || false,
       slug: product.slug || "",
       created_at: product.createdAt ? product.createdAt.toISOString() : "",
       updated_at: product.updatedAt ? product.updatedAt.toISOString() : "",

@@ -1,7 +1,7 @@
 ### BIẾN MÔI TRƯỜNG
 @baseUrl = http://localhost:4000/api/v1
 @authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2M2JkMjZlMWMwYjljM2I4ZDBjMTAxYiIsInJvbGUiOiJhZG1pbiIsIm5hbWUiOiJBZG1pbiIsImlhdCI6MTcxMTI5MjE0OCwiZXhwIjoxNzExMzc4NTQ4fQ.6C1OeUXzLbqOjvNGcGXx8cTWPX6AYgmNP1w5GyMXJeY
-@categoryId = 663bd1fe1c0b9c3b8d0c101a
+@categoryId = 67f14511c20a953c329be71e
 @materialId = 67f33d917ab8e4dc7e066620
 
 ###########################################################
@@ -46,6 +46,9 @@ POST {{baseUrl}}/auth/logout
 ### 2. PRODUCT API
 ###########################################################
 
+
+GET {{baseUrl}}/products
+
 ### 2.1 Lấy sản phẩm theo danh mục
 GET {{baseUrl}}/products/category/{{categoryId}}
 
@@ -80,14 +83,13 @@ Authorization: Bearer {{authToken}}
 ### 5. PRODUCT API
 ###########################################################
 
-### 5.1 Tạo sản phẩm mới - Phiên bản đơn giản (sau khi sửa controller)
+### 5.1 Tạo sản phẩm mới - Phiên bản đơn giản
 POST {{baseUrl}}/products
 Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
   "name": "Áo Polo Nam Coolmax Air",
-  "slug": "ao-polo-nam-coolmax-air-2024",
   "description": "Áo polo nam Coolmax Air với công nghệ thoáng khí cao cấp",
   "price": {
     "original": 249000,
@@ -96,7 +98,9 @@ Authorization: Bearer {{authToken}}
   },
   "category_id": "67f1452519ecc7c90441f446",
   "material_id": "67f33d917ab8e4dc7e066620",
-  "total_quantity": 80
+  "total_quantity": 80,
+  "tagIsNew": true,
+  "thumb": "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-polo-coolmax-air-thumb.jpg"
 }
 
 ### 5.2 Lấy sản phẩm theo danh mục
@@ -141,14 +145,13 @@ GET {{baseUrl}}/products/slug/test-product
 ### 5.7 Lấy tất cả sản phẩm
 GET {{baseUrl}}/products
 
-### 5.8 Tạo sản phẩm mới (kiểm tra slug tiếng Việt)
+### 5.8 Tạo sản phẩm với variants
 POST {{baseUrl}}/products
 Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
   "name": "Áo Sơ Mi Nam Linen Thoáng Khí",
-  "slug": "ao-so-mi-nam-linen-thoang-khi",
   "description": "Áo sơ mi nam chất liệu linen cao cấp, thoáng khí, phù hợp với thời tiết nóng ẩm, đặc biệt thoải mái khi mặc trong mùa hè.",
   "price": {
     "original": 329000,
@@ -158,6 +161,8 @@ Authorization: Bearer {{authToken}}
   "category_id": "67f1452519ecc7c90441f446",
   "material_id": "67f33d917ab8e4dc7e066620",
   "total_quantity": 50,
+  "thumb": "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2024/ao-so-mi-nam-thumb.jpg",
+  "tagIsNew": true,
   "variants": [
     {
       "name": "Xanh Navy",
@@ -226,3 +231,40 @@ GET {{baseUrl}}/products/category/slug/ao-polo?page=1&limit=5
 
 ### 5.12.6 Lấy sản phẩm theo danh mục không tồn tại
 GET {{baseUrl}}/products/category/slug/danh-muc-khong-ton-tai
+
+### 5.13 Tạo sản phẩm với size L
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "name": "Áo Thun Nam Size L Only",
+  "description": "Áo thun nam chỉ có size L, chất liệu cotton thoáng mát",
+  "price": {
+    "original": 150000,
+    "discountQuantity": 10,
+    "currency": "VND"
+  },
+  "category_id": "67f1452519ecc7c90441f446",
+  "material_id": "67f33d917ab8e4dc7e066620",
+  "thumb": "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-basic.jpg",
+  "variants": [
+    {
+      "name": "Đen",
+      "color": "#000000",
+      "colorThumbnail": "https://media3.coolmate.me/cdn-cgi/image/width=160,height=160,quality=80,format=auto/uploads/March2023/ao-thun-den-thumb.jpg",
+      "sizes": [
+        {
+          "size": "L",
+          "stock": 40
+        }
+      ],
+      "images": [
+        "https://media3.coolmate.me/cdn-cgi/image/width=672,height=990,quality=85/uploads/March2023/ao-thun-den-1.jpg"
+      ]
+    }
+  ]
+}
+
+
+
