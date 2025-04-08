@@ -68,14 +68,11 @@ class AuthService {
       phone_number,
       ipAddress,
       userAgent,
-      name,
     } = userData;
 
-    // Kiểm tra các trường bắt buộc
-    // Nếu có name từ controller, sử dụng name là fullName nếu không có fullName
-    const userFullName = fullName || name;
+    console.log(`Check data: ${JSON.stringify(userData)}`);
 
-    if (!username || !email || !password || (!userFullName && !name)) {
+    if (!username || !email || !password || !fullName) {
       throw new Error("Tất cả các trường đều là bắt buộc");
     }
 
@@ -112,11 +109,11 @@ class AuthService {
       username,
       email,
       password: hashedPassword,
-      fullName: userFullName || name,
+      fullName,
       phone_number,
-      role: 0, // Default role (user)
+      role: 0,
       type: "WEBSITE",
-      status: 1, // Active
+      status: 1,
     });
 
     // Tạo access token

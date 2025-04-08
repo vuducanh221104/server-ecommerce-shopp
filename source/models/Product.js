@@ -56,6 +56,22 @@ const CommentSchema = new Schema(
   { _id: true, timestamps: true }
 );
 
+const DescriptionSchema = new Schema(
+  {
+    header: {
+      material: { type: String, default: "" },
+      style: { type: String, default: "" },
+      responsible: { type: String, default: "" },
+      features: { type: String, default: "" },
+      image: { type: String, default: "" },
+    },
+    body: {
+      content: { type: String, default: "" },
+    },
+  },
+  { _id: false, timestamps: false }
+);
+
 const ProductSchema = new Schema(
   {
     product_type_id: { type: Types.ObjectId, required: false },
@@ -84,7 +100,7 @@ const ProductSchema = new Schema(
     total_quantity: { type: Number, required: true },
     total_star: { type: Number, default: 5 },
     comments: [CommentSchema],
-    description: { type: String, required: true },
+    description: { type: DescriptionSchema, required: true },
     slug: { type: String, required: true, unique: true },
     tagIsNew: { type: Boolean, default: true },
   },

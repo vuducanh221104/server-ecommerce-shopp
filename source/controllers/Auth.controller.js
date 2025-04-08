@@ -47,7 +47,7 @@ class AuthController {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.headers["user-agent"];
 
-    if (!req.body.email || !req.body.password || !req.body.name) {
+    if (!req.body.email || !req.body.password || !req.body.username) {
       return res
         .status(400)
         .json({ message: "Tất cả các trường đều là bắt buộc" });

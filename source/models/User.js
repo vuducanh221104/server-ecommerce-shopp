@@ -62,8 +62,8 @@ const WishlistItemSchema = new Schema(
 const UserSchema = new Schema(
   {
     username: { type: String, unique: true },
-    fullName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    fullName: { type: String },
+    email: { type: String, unique: true },
     password: { type: String, required: true },
     type: {
       type: String,

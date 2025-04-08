@@ -51,6 +51,7 @@ class ProductController {
       variants,
       tagIsNew,
       thumbnail,
+      slug,
     } = productData;
 
     // Chỉ kiểm tra các trường thực sự bắt buộc theo model
@@ -91,6 +92,38 @@ class ProductController {
       return res.status(400).json({
         status: "error",
         message: "Giá sản phẩm không hợp lệ",
+      });
+    }
+
+    // Validate variants nếu có
+    if (variants && !Array.isArray(variants)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Variants phải là một mảng",
+      });
+    }
+
+    // Validate tagIsNew nếu có
+    if (tagIsNew !== undefined && typeof tagIsNew !== "boolean") {
+      return res.status(400).json({
+        status: "error",
+        message: "tagIsNew phải là một giá trị boolean",
+      });
+    }
+
+    // Validate thumbnail nếu có
+    if (thumbnail && typeof thumbnail !== "string") {
+      return res.status(400).json({
+        status: "error",
+        message: "Thumbnail phải là một chuỗi URL",
+      });
+    }
+
+    // Validate slug nếu có
+    if (slug && typeof slug !== "string") {
+      return res.status(400).json({
+        status: "error",
+        message: "Slug phải là một chuỗi",
       });
     }
 

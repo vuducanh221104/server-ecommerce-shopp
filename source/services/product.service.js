@@ -388,10 +388,10 @@ class ProductService {
 
     // Xử lý giá
     const productPrice = {
-      original: price.original || price,
-      discount: price.discount || 0,
-      discountQuantity: price.discountQuantity || 0,
-      currency: price.currency || "VND",
+      original: typeof price === "number" ? price : price?.original || 0,
+      discount: price?.discount || 0,
+      discountQuantity: price?.discountQuantity || 0,
+      currency: price?.currency || "VND",
     };
 
     // Xử lý biến thể và tính tổng số lượng
@@ -855,9 +855,9 @@ class ProductService {
     let description = {
       header: {
         material: materials.length > 0 ? materials[0].name : "",
-        style: "Regular fit",
-        responsible: "",
-        features: "",
+        style: product.style || "",
+        responsible: product.responsible || "",
+        features: product.features || "",
         image: product.thumb || "",
       },
       body: {
@@ -917,8 +917,8 @@ class ProductService {
       name: product.name,
       description,
       price: {
-        price: product.price?.original || 0,
-        originalPrice: product.price?.original || 0,
+        original: product.price?.original || 0,
+        discount: product.price?.discount || 0,
         discountQuantity: product.price?.discountQuantity || 0,
         currency: product.price?.currency || "VND",
       },

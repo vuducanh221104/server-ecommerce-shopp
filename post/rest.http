@@ -13,7 +13,6 @@ POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "name": "Test User 2",
   "fullName": "Test User Full Name 2",
   "username": "testuser888",
   "email": "testuser888@example.com",
@@ -75,8 +74,8 @@ Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-  "name": "Cotton",
-  "description": "Chất liệu cotton 100% cao cấp"
+  "name": "Linen ",
+  "description": "Chất liệu lanh tự nhiên cao cấp, cực kỳ thoáng mát và hút ẩm tốt. Hoàn hảo cho mùa hè hoặc những ngày nắng nóng."
 }
 
 ###########################################################
