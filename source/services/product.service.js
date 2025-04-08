@@ -60,7 +60,7 @@ class ProductService {
       .populate("material_id", "name slug _id")
       .populate({
         path: "variants",
-        select: "name color colorThumbnail images sizes",
+        select: "name colorThumbnail images sizes",
       })
       .sort({ [sort]: order === "desc" ? -1 : 1 })
       .skip(skip)
@@ -98,7 +98,7 @@ class ProductService {
       .populate("material_id", "name slug _id")
       .populate({
         path: "variants",
-        select: "name color colorThumbnail images sizes",
+        select: "name colorThumbnail images sizes",
       })
       .populate({
         path: "comments",
@@ -130,7 +130,7 @@ class ProductService {
       .populate("material_id", "name slug _id")
       .populate({
         path: "variants",
-        select: "name color colorThumbnail images sizes",
+        select: "name colorThumbnail images sizes",
       })
       .populate({
         path: "comments",
@@ -418,8 +418,7 @@ class ProductService {
           }) || [];
 
         return {
-          name: variant.name || variant.color || "",
-          color: variant.color || "",
+          name: variant.name || "",
           colorThumbnail: variant.colorThumbnail || "",
           sizes,
           images: variant.images || [],
@@ -585,7 +584,6 @@ class ProductService {
 
         return {
           name: variant.name || "",
-          color: variant.color || "",
           colorThumbnail: variant.colorThumbnail || "",
           sizes,
           images: variant.images || [],
@@ -660,11 +658,6 @@ class ProductService {
       throw new Error("Không tìm thấy sản phẩm");
     }
 
-    // Kiểm tra dữ liệu variant
-    if (!variantData.color) {
-      throw new Error("Màu sắc là bắt buộc");
-    }
-
     // Xử lý sizes và tính toán tổng số lượng bổ sung
     let additionalStock = 0;
     const sizes =
@@ -678,8 +671,7 @@ class ProductService {
 
     // Tạo variant mới
     const newVariant = {
-      name: variantData.name || variantData.color,
-      color: variantData.color,
+      name: variantData.name || "",
       colorThumbnail: variantData.colorThumbnail || "",
       sizes,
       images: variantData.images || [],
@@ -904,7 +896,6 @@ class ProductService {
     const formattedVariants = product.variants
       ? product.variants.map((variant) => ({
           name: variant.name || "",
-          color: variant.color || "",
           colorThumbnail: variant.colorThumbnail || "",
           images: variant.images || [],
           sizes: variant.sizes || [],

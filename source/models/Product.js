@@ -11,7 +11,6 @@ const SizeSchema = new Schema(
 const VariantSchema = new Schema(
   {
     name: { type: String, required: true },
-    color: { type: String, required: true },
     colorThumbnail: { type: String, required: true },
     sizes: [SizeSchema],
     images: { type: [String], required: true },
