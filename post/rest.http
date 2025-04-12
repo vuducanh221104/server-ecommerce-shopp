@@ -1,7 +1,7 @@
 ### BIẾN MÔI TRƯỜNG
 @baseUrl = http://localhost:4000/api/v1
 @authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2M2JkMjZlMWMwYjljM2I4ZDBjMTAxYiIsInJvbGUiOiJhZG1pbiIsIm5hbWUiOiJBZG1pbiIsImlhdCI6MTcxMTI5MjE0OCwiZXhwIjoxNzExMzc4NTQ4fQ.6C1OeUXzLbqOjvNGcGXx8cTWPX6AYgmNP1w5GyMXJeY
-@categoryId = 67f14511c20a953c329be71e
+@categoryId = 67f3a14853334c5256139191
 @materialId = 67f33d917ab8e4dc7e066620
 
 ###########################################################
@@ -264,6 +264,88 @@ Authorization: Bearer {{authToken}}
     }
   ]
 }
+
+###########################################################
+### 6. TEST COLLECTION API (KIỂU COOLMATE)
+###########################################################
+
+### 6.1 Test API lấy sản phẩm theo collection/danh mục - Áo Thun Nam
+GET {{baseUrl}}/products/category/slug/ao-thun
+
+### 6.2 Test API lấy sản phẩm theo collection/danh mục - Áo Polo Nam
+GET {{baseUrl}}/products/category/slug/ao-polo
+
+### 6.3 Test API lấy sản phẩm theo collection/danh mục - Áo Sơ Mi Nam
+GET {{baseUrl}}/products/category/slug/ao-the-thao
+
+### 6.4 Test API lấy sản phẩm theo collection/danh mục - Quần Nam
+GET {{baseUrl}}/products/category/slug/quan
+
+### 6.5 Test API lấy sản phẩm theo collection/danh mục với phân trang
+GET {{baseUrl}}/products/category/slug/ao-thun?page=1&limit=10
+
+###########################################################
+### 7. TEST API COLLECTION KIỂU WEBSITE COOLMATE
+###########################################################
+
+### 7.1 API lấy sản phẩm theo collection - giống https://www.coolmate.me/collection/ao-thun-nam
+GET {{baseUrl}}/products/category/slug/ao-thun-nam
+
+### 7.2 API lấy sản phẩm theo collection - giống https://www.coolmate.me/collection/ao-polo-nam
+GET {{baseUrl}}/products/category/slug/ao-polo-nam
+
+### 7.3 API lấy sản phẩm theo collection - giống https://www.coolmate.me/collection/ao-so-mi-nam
+GET {{baseUrl}}/products/category/slug/ao-so-mi-nam
+
+### 7.4 API lấy sản phẩm theo collection - giống https://www.coolmate.me/collection/quan-nam
+GET {{baseUrl}}/products/category/slug/quan-nam
+
+### 7.5 API lấy sản phẩm theo collection với phân trang
+GET {{baseUrl}}/products/category/slug/ao-thun-nam?page=1&limit=12
+
+###########################################################
+### 8. TEST API LỌC SẢN PHẨM THEO MÀU SẮC VÀ KÍCH CỠ
+###########################################################
+
+### 8.1 API lọc áo sơ mi nam màu đen, size S (giống https://www.coolmate.me/collection/ao-so-mi-nam-den?size=S)
+GET {{baseUrl}}/products/category/slug/ao-the-thao?size=M
+
+### 8.2 API lọc áo sơ mi nam màu trắng, size M
+GET {{baseUrl}}/products/category/slug/ao-so-mi-nam?color=trang&size=M
+
+### 8.3 API lọc áo thun nam màu đen, size L
+GET {{baseUrl}}/products/category/slug/ao-thun-nam?color=den&size=L
+
+### 8.4 API lọc theo màu sắc không cần kích cỡ
+GET {{baseUrl}}/products/category/slug/ao-so-mi-nam?color=den
+
+### 8.5 API lọc theo kích cỡ không cần màu sắc
+GET {{baseUrl}}/products/category/slug/ao-so-mi-nam?size=XL
+
+### 8.6 API lọc sản phẩm với nhiều tham số (màu, kích cỡ, sắp xếp, phân trang)
+GET {{baseUrl}}/products/category/slug/ao-so-mi-nam?color=den&size=S&sort=price_asc&page=1&limit=20
+
+###########################################################
+### 9. TEST API LỌC SẢN PHẨM ĐẦY ĐỦ
+###########################################################
+
+### 9.1 API lọc áo sơ mi nam màu đen, size S với sắp xếp từ giá thấp đến cao
+GET {{baseUrl}}/products/category/slug/ao-so-mi-nam?color=den&size=S&sort=price_asc
+
+### 9.2 API lọc áo sơ mi nam màu trắng, size M với sắp xếp từ giá cao đến thấp
+GET {{baseUrl}}/products/category/slug/ao-so-mi-nam?color=trang&size=M&sort=price_desc
+
+### 9.3 API lọc áo thun nam màu đen, size L với sắp xếp theo bán chạy nhất
+GET {{baseUrl}}/products/category/slug/ao-thun-nam?color=den&size=L&sort=bestseller
+
+### 9.4 API lọc áo sơ mi nam màu đen với khoảng giá 100,000đ đến 500,000đ
+GET {{baseUrl}}/products/category/slug/ao-so-mi-nam?color=den&minPrice=100000&maxPrice=500000
+
+### 9.5 API lọc áo sơ mi nam, sắp xếp theo % giảm giá nhiều nhất
+GET {{baseUrl}}/products/category/slug/ao-so-mi-nam?sort=discount
+
+### 9.6 API lọc áo thun nam với phân trang và sắp xếp mới nhất
+GET {{baseUrl}}/products/category/slug/ao-thun-nam?page=1&limit=20&sort=newest
 
 
 

@@ -256,10 +256,15 @@ class ProductService {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // Sửa searchQuery để tránh lỗi $options với subdocuments
     const searchQuery = {
       $or: [
-        { name: { $regex: query, $options: "i" } },
-        { description: { $regex: query, $options: "i" } },
+        // Tìm theo tên sản phẩm
+        { name: new RegExp(query, "i") },
+        // Tìm theo nội dung trong description.body.content
+        { "description.body.content": new RegExp(query, "i") },
+        // Tìm trong các trường khác nếu cần
+        { "variants.name": new RegExp(query, "i") },
       ],
     };
 
@@ -273,14 +278,6 @@ class ProductService {
         },
       })
       .populate("material_id", "name slug _id")
-      .populate({
-        path: "price",
-        select: "original discount discountQuantity currency",
-      })
-      .populate({
-        path: "variants",
-        select: "name color colorThumbnail images sizes",
-      })
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });
@@ -768,20 +765,141 @@ class ProductService {
         products: [],
         pagination: this.createPaginationInfo(0, page, limit),
         category: null,
+        filters: {},
       };
     }
 
-    // Tìm tất cả sản phẩm trong danh mục này
+    // Xây dựng query để tìm sản phẩm
     const query = { category_id: category._id };
-    const totalProducts = await Product.countDocuments(query);
 
-    // Lấy sản phẩm với phân trang
-    const products = await Product.find(query)
-      .populate("category_id", "name slug parent")
-      .populate("material_id", "name slug")
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
+    // Lưu các bộ lọc đã áp dụng để trả về client
+    const appliedFilters = {};
+
+    // Khi có lọc theo màu sắc hoặc kích cỡ, sẽ lấy tất cả sản phẩm trước
+    // rồi lọc sau khi đã lấy dữ liệu để tránh lỗi với subdocuments
+    let usePostFilter = false;
+    let colorFilter = null;
+    let sizeFilter = null;
+
+    // Lưu thông tin lọc
+    if (options.color) {
+      const normalizedColor = this.normalizeColor(options.color);
+      colorFilter = normalizedColor;
+      appliedFilters.color = normalizedColor;
+      usePostFilter = true;
+    }
+
+    if (options.size) {
+      sizeFilter = options.size.toUpperCase();
+      appliedFilters.size = sizeFilter;
+      usePostFilter = true;
+    }
+
+    // Lọc theo khoảng giá nếu có
+    if (options.minPrice) {
+      query["price.original"] = { $gte: parseInt(options.minPrice) };
+      appliedFilters.minPrice = parseInt(options.minPrice);
+    }
+
+    if (options.maxPrice) {
+      if (query["price.original"]) {
+        query["price.original"].$lte = parseInt(options.maxPrice);
+      } else {
+        query["price.original"] = { $lte: parseInt(options.maxPrice) };
+      }
+      appliedFilters.maxPrice = parseInt(options.maxPrice);
+    }
+
+    // Xác định cách sắp xếp
+    let sortOption = { createdAt: -1 }; // Mặc định sắp xếp theo mới nhất
+
+    if (options.sort) {
+      switch (options.sort) {
+        case "price_asc":
+          sortOption = { "price.original": 1 };
+          appliedFilters.sort = "price_asc";
+          break;
+        case "price_desc":
+          sortOption = { "price.original": -1 };
+          appliedFilters.sort = "price_desc";
+          break;
+        case "newest":
+          sortOption = { createdAt: -1 };
+          appliedFilters.sort = "newest";
+          break;
+        case "bestseller":
+          sortOption = { sold: -1 };
+          appliedFilters.sort = "bestseller";
+          break;
+        case "discount":
+          sortOption = { "price.discountQuantity": -1 };
+          appliedFilters.sort = "discount";
+          break;
+        default:
+          appliedFilters.sort = "newest";
+          break;
+      }
+    }
+
+    // Đếm tổng số sản phẩm thỏa mãn điều kiện - cần đếm lại sau khi lọc
+    let totalProducts = await Product.countDocuments(query);
+
+    // Lấy tất cả sản phẩm để lọc thủ công nếu cần
+    let products;
+
+    if (usePostFilter) {
+      // Nếu có lọc theo màu sắc hoặc kích cỡ, lấy nhiều sản phẩm hơn để lọc sau
+      const maxProducts = limit * 10; // Lấy nhiều hơn để đảm bảo đủ sau khi lọc
+
+      products = await Product.find(query)
+        .populate("category_id", "name slug parent")
+        .populate("material_id", "name slug")
+        .sort(sortOption)
+        .limit(maxProducts);
+
+      // Lọc thủ công theo màu sắc và kích cỡ
+      if (colorFilter) {
+        products = products.filter((product) => {
+          return (
+            product.variants &&
+            product.variants.some(
+              (variant) =>
+                variant.name &&
+                variant.name.toLowerCase().includes(colorFilter.toLowerCase())
+            )
+          );
+        });
+      }
+
+      if (sizeFilter) {
+        products = products.filter((product) => {
+          return (
+            product.variants &&
+            product.variants.some(
+              (variant) =>
+                variant.sizes &&
+                variant.sizes.some(
+                  (size) => size.size === sizeFilter && size.stock > 0
+                )
+            )
+          );
+        });
+      }
+
+      // Cập nhật lại số lượng sau khi lọc
+      totalProducts = products.length;
+
+      // Áp dụng phân trang thủ công
+      products = products.slice(skip, skip + limit);
+    } else {
+      // Nếu không cần lọc thủ công thì thực hiện truy vấn với phân trang bình thường
+      products = await Product.find(query)
+        .populate("category_id", "name slug parent")
+        .populate("material_id", "name slug")
+        .skip(skip)
+        .limit(limit)
+        .sort(sortOption);
+    }
 
     // Format sản phẩm để trả về
     const formattedProducts = products.map((product) =>
@@ -792,7 +910,28 @@ class ProductService {
       products: formattedProducts,
       pagination: this.createPaginationInfo(totalProducts, page, limit),
       category,
+      filters: appliedFilters,
     };
+  }
+
+  // Hàm chuẩn hóa màu sắc từ URL (den -> Đen, trang -> Trắng, v.v.)
+  normalizeColor(colorSlug) {
+    const colorMap = {
+      den: "Đen",
+      trang: "Trắng",
+      xam: "Xám",
+      "xanh-lam": "Xanh Lam",
+      "xanh-la": "Xanh Lá",
+      do: "Đỏ",
+      vang: "Vàng",
+      tim: "Tím",
+      hong: "Hồng",
+      cam: "Cam",
+      nau: "Nâu",
+      be: "Be",
+    };
+
+    return colorMap[colorSlug.toLowerCase()] || colorSlug;
   }
 
   createPaginationInfo(total, page, limit) {

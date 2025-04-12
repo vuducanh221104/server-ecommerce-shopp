@@ -361,6 +361,11 @@ class ProductController {
     const options = {
       page: req.query.page,
       limit: req.query.limit,
+      color: req.query.color,
+      size: req.query.size,
+      sort: req.query.sort,
+      minPrice: req.query.minPrice,
+      maxPrice: req.query.maxPrice,
     };
 
     const result = await ProductService.getProductsByCategorySlug(
@@ -395,6 +400,7 @@ class ProductController {
       products: result.products,
       category: formattedCategory,
       pagination: result.pagination,
+      filters: result.filters,
     });
   });
 }

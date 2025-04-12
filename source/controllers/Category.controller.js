@@ -58,7 +58,7 @@ class CategoryController {
       data: {
         category: CategoryService.formatCategory(category),
       },
-    });
+    }); 
   });
 
 
