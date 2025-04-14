@@ -403,6 +403,32 @@ class ProductController {
       filters: result.filters,
     });
   });
+
+  getAllProductsWithoutCategory = CatchError(async (req, res) => {
+    const options = {
+      page: req.query.page,
+      limit: req.query.limit,
+      color: req.query.color,
+      size: req.query.size,
+      sort: req.query.sort,
+      minPrice: req.query.minPrice,
+      maxPrice: req.query.maxPrice,
+    };
+
+    const filters = {
+      ...options,
+      order: req.query.order,
+    };
+
+    const result = await ProductService.getProducts(filters);
+
+    return res.status(200).json({
+      message: "Lấy tất cả sản phẩm thành công",
+      products: result.products,
+      pagination: result.pagination,
+      filters: options,
+    });
+  });
 }
 
 export default new ProductController();

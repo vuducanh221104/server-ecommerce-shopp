@@ -213,22 +213,28 @@ GET {{baseUrl}}/products/search?q=COOLMAX
 ### 5.12 Lấy sản phẩm theo slug của danh mục
 GET {{baseUrl}}/products/category/slug/ao-polo
 
-### 5.12.1 Lấy sản phẩm theo danh mục Áo Polo
+### 5.12.1 Lấy tất cả sản phẩm của tất cả danh mục
+GET {{baseUrl}}/products/category/slug/all
+
+### 5.12.2 Lấy tất cả sản phẩm với phân trang và sắp xếp
+GET {{baseUrl}}/products/category/slug/all?page=1&limit=10&sort=newest
+
+### 5.12.3 Lấy sản phẩm theo danh mục Áo Polo
 GET {{baseUrl}}/products/category/slug/ao-polo
 
-### 5.12.2 Lấy sản phẩm theo danh mục Áo Sơ Mi
+### 5.12.4 Lấy sản phẩm theo danh mục Áo Sơ Mi
 GET {{baseUrl}}/products/category/slug/ao-the-thao
 
-### 5.12.3 Lấy sản phẩm theo danh mục Áo Thun
+### 5.12.5 Lấy sản phẩm theo danh mục Áo Thun
 GET {{baseUrl}}/products/category/slug/ao-nam
 
-### 5.12.4 Lấy sản phẩm theo danh mục Quần
+### 5.12.6 Lấy sản phẩm theo danh mục Quần
 GET {{baseUrl}}/products/category/slug/quan
 
-### 5.12.5 Lấy sản phẩm theo danh mục với phân trang
+### 5.12.7 Lấy sản phẩm theo danh mục với phân trang
 GET {{baseUrl}}/products/category/slug/ao-polo?page=1&limit=5
 
-### 5.12.6 Lấy sản phẩm theo danh mục không tồn tại
+### 5.12.8 Lấy sản phẩm theo danh mục không tồn tại
 GET {{baseUrl}}/products/category/slug/danh-muc-khong-ton-tai
 
 ### 5.13 Tạo sản phẩm với size L
