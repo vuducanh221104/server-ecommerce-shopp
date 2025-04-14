@@ -217,10 +217,10 @@ GET {{baseUrl}}/products/category/slug/ao-polo
 GET {{baseUrl}}/products/category/slug/ao-polo
 
 ### 5.12.2 Lấy sản phẩm theo danh mục Áo Sơ Mi
-GET {{baseUrl}}/products/category/slug/ao-so-mi
+GET {{baseUrl}}/products/category/slug/ao-the-thao
 
 ### 5.12.3 Lấy sản phẩm theo danh mục Áo Thun
-GET {{baseUrl}}/products/category/slug/ao-thun
+GET {{baseUrl}}/products/category/slug/ao-nam
 
 ### 5.12.4 Lấy sản phẩm theo danh mục Quần
 GET {{baseUrl}}/products/category/slug/quan

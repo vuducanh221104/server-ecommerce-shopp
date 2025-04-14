@@ -769,8 +769,17 @@ class ProductService {
       };
     }
 
-    // Xây dựng query để tìm sản phẩm
-    const query = { category_id: category._id };
+    // Tìm tất cả các danh mục con của danh mục hiện tại
+    const childCategories = await Category.find({ parent: category._id });
+
+    // Tạo mảng chứa ID của tất cả các danh mục để tìm sản phẩm (bao gồm danh mục hiện tại và các danh mục con)
+    const categoryIds = [
+      category._id,
+      ...childCategories.map((cat) => cat._id),
+    ];
+
+    // Xây dựng query để tìm sản phẩm thuộc cả danh mục hiện tại và các danh mục con
+    const query = { category_id: { $in: categoryIds } };
 
     // Lưu các bộ lọc đã áp dụng để trả về client
     const appliedFilters = {};
@@ -852,7 +861,14 @@ class ProductService {
       const maxProducts = limit * 10; // Lấy nhiều hơn để đảm bảo đủ sau khi lọc
 
       products = await Product.find(query)
-        .populate("category_id", "name slug parent")
+        .populate({
+          path: "category_id",
+          select: "name slug parent",
+          populate: {
+            path: "parent",
+            select: "name slug _id",
+          },
+        })
         .populate("material_id", "name slug")
         .sort(sortOption)
         .limit(maxProducts);
@@ -894,7 +910,14 @@ class ProductService {
     } else {
       // Nếu không cần lọc thủ công thì thực hiện truy vấn với phân trang bình thường
       products = await Product.find(query)
-        .populate("category_id", "name slug parent")
+        .populate({
+          path: "category_id",
+          select: "name slug parent",
+          populate: {
+            path: "parent",
+            select: "name slug _id",
+          },
+        })
         .populate("material_id", "name slug")
         .skip(skip)
         .limit(limit)
