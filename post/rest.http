@@ -151,7 +151,7 @@ Authorization: Bearer {{authToken}}
 
 {
   "name": "Áo Sơ Mi Nam Linen Thoáng Khí",
-  "description": "Áo sơ mi nam chất liệu linen cao cấp, thoáng khí, phù hợp với thời tiết nóng ẩm, đặc biệt thoải mái khi mặc trong mùa hè.",
+  "description": "Áo sơ mi nam chất liệu linen cao cấp, thoáng khí, phù hợp với thởi tiết nóng ẩm, đặc biệt thoải mái khi mặc trong mùa hè.",
   "price": {
     "original": 329000,
     "discountQuantity": 20,
@@ -353,5 +353,134 @@ GET {{baseUrl}}/products/category/slug/ao-so-mi-nam?sort=discount
 ### 9.6 API lọc áo thun nam với phân trang và sắp xếp mới nhất
 GET {{baseUrl}}/products/category/slug/ao-thun-nam?page=1&limit=20&sort=newest
 
+###########################################################
+### 10. TEST API ĐƠN HÀNG (ORDER)
+###########################################################
 
+### 10.1 Tạo đơn hàng
+POST {{baseUrl}}/orders
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
+{
+  "items": [
+    {
+      "product_id": "67facaf0f98edc08afb4d812",
+      "name": "Áo Polo Nam Coolmax Air",
+      "price": 249000,
+      "quantity": 2,
+      "variant_id": "67f1452519ecc7c90441f447",
+      "color": "Xanh Navy",
+      "size": "L",
+      "thumb": "https://media3.coolmate.me/uploads/March2023/ao-polo-coolmax-air-thumb.jpg",
+      "slug": "ao-polo-nam-coolmax-air"
+    }
+  ],
+  "customer_email": "customer@example.com",
+  "shipping_address": {
+    "full_name": "Nguyễn Văn A",
+    "phone_number": "0987654321",
+    "street": "123 Đường Lê Lợi",
+    "ward": "Phường Bến Nghé",
+    "district": "Quận 1",
+    "city": "TP. Hồ Chí Minh",
+    "country": "Vietnam"
+  },
+  "payment": {
+    "method": "COD",
+    "status": "PENDING"
+  },
+  "total_amount": 498000
+}
+
+### 10.2 Tạo đơn hàng từ giỏ hàng (Create Order from Cart)
+POST {{baseUrl}}/orders/from-cart
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "shipping_address": {
+    "full_name": "Nguyễn Văn A",
+    "phone_number": "0987654321",
+    "street": "123 Đường Lê Lợi",
+    "ward": "Phường Bến Nghé",
+    "district": "Quận 1",
+    "city": "TP. Hồ Chí Minh",
+    "country": "Vietnam"
+  },
+  "payment_method": "COD"
+}
+
+### 10.3 Lấy danh sách đơn hàng của tôi
+GET {{baseUrl}}/orders/my-orders
+Authorization: Bearer {{authToken}}
+
+### 10.4 Lấy chi tiết đơn hàng theo ID
+GET {{baseUrl}}/orders/6804967d75cd4037f71af3b8
+Authorization: Bearer {{authToken}}
+
+### 10.5 Hủy đơn hàng
+POST {{baseUrl}}/orders/6804967d75cd4037f71af3b8/cancel
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "reason": "Thay đổi ý định mua hàng"
+}
+
+###########################################################
+### 11. TEST API THANH TOÁN (PAYMENT)
+###########################################################
+
+### 11.1 Lấy danh sách phương thức thanh toán có sẵn
+GET {{baseUrl}}/payment/methods
+
+### 11.2 Khởi tạo thanh toán cho đơn hàng (VNPAY)
+POST {{baseUrl}}/payment/initialize
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "orderId": "6804967d75cd4037f71af3b8",
+  "method": "VNPAY",
+  "successUrl": "http://localhost:3000/payment/success",
+  "cancelUrl": "http://localhost:3000/payment/cancel"
+}
+
+### 11.2.1 Khởi tạo thanh toán qua MoMo
+POST {{baseUrl}}/payment/initialize
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "orderId": "6804967d75cd4037f71af3b8",
+  "method": "MOMO",
+  "successUrl": "http://localhost:3000/payment/success",
+  "cancelUrl": "http://localhost:3000/payment/cancel"
+}
+
+### 11.3 Xử lý thanh toán COD
+POST {{baseUrl}}/payment/cod/process
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "orderId": "6804983c0778d70515133aa3"
+}
+
+### 11.4 Kiểm tra trạng thái thanh toán
+GET {{baseUrl}}/payment/status/6804983c0778d70515133aa3
+Authorization: Bearer {{authToken}}
+
+### 11.5 Lấy thông tin thanh toán của đơn hàng
+GET {{baseUrl}}/payment/order/6804983c0778d70515133aa3
+Authorization: Bearer {{authToken}}
+
+### 11.6 Xác nhận thanh toán Stripe
+POST {{baseUrl}}/payment/stripe/confirm
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "sessionId": "cs_test_a1b2c3d4e5f6g7h8i9j0"
+}
