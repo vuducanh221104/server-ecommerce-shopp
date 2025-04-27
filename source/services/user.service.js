@@ -57,11 +57,15 @@ class UserService {
     const {
       fullName,
       gender,
-      phone_number,
+      phoneNumber,
       address,
       dateOfBirth,
       password,
       newPassword,
+      // For backward compatibility
+      full_name,
+      phone_number,
+      date_of_birth,
     } = userData;
 
     const user = await User.findById(userId);
@@ -82,11 +86,14 @@ class UserService {
       user.password = await hashPassword(newPassword);
     }
 
-    if (fullName) user.fullName = fullName;
+    // Use camelCase fields with fallback to snake_case for backward compatibility
+    if (fullName || full_name) user.fullName = fullName || full_name;
     if (gender) user.gender = gender;
-    if (phone_number) user.phone_number = phone_number;
+    if (phoneNumber || phone_number)
+      user.phoneNumber = phoneNumber || phone_number;
     if (address) user.address = address;
-    if (dateOfBirth) user.dateOfBirth = dateOfBirth;
+    if (dateOfBirth || date_of_birth)
+      user.dateOfBirth = dateOfBirth || date_of_birth;
 
     await user.save();
 
@@ -187,12 +194,15 @@ class UserService {
 
     return {
       _id: user._id.toString(),
-      user_name: user.user_name || "",
+      username: user.username || "",
       email: user.email || "",
       password: user.password || "",
-      full_name: user.full_name || "",
+      fullName: user.fullName || "",
       type: user.type || "WEBSITE",
-      phone_number: user.phone_number || "",
+      phoneNumber: user.phoneNumber || "",
+      // For backward compatibility
+      phone_number: user.phoneNumber || "",
+      full_name: user.fullName || "",
       address: {
         street: user.address?.street || "",
         ward: user.address?.ward || "",
@@ -200,13 +210,205 @@ class UserService {
         city: user.address?.city || "",
         country: user.address?.country || "",
       },
-      date_of_birth: user.date_of_birth || "",
+      dateOfBirth: user.dateOfBirth || "",
+      // For backward compatibility
+      date_of_birth: user.dateOfBirth || "",
       gender: user.gender || "",
       avatar: user.avatar || "",
       role: user.role || 0,
       status: user.status || 1,
       cart: formattedCart,
     };
+  }
+
+  // Get all addresses for a user
+  async getUserAddresses(userId) {
+    const user = await User.findById(userId).select("addresses");
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return user.addresses || [];
+  }
+
+  // Add a new address for a user
+  async addUserAddress(userId, addressData) {
+    const {
+      street,
+      city,
+      district,
+      ward,
+      country = "Vietnam",
+      isDefault = false,
+    } = addressData;
+
+    if (!street || !city || !district) {
+      throw new Error("Street, city, and district are required");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // If the new address is set as default, unset any existing default
+    if (isDefault) {
+      user.addresses.forEach((addr) => {
+        addr.isDefault = false;
+      });
+    }
+
+    // If this is the first address, make it default
+    const makeDefault = isDefault || user.addresses.length === 0;
+
+    // Create the new address
+    const newAddress = {
+      street,
+      city,
+      district,
+      ward,
+      country,
+      isDefault: makeDefault,
+    };
+
+    user.addresses.push(newAddress);
+    await user.save();
+
+    return user.addresses[user.addresses.length - 1];
+  }
+
+  // Update an existing address
+  async updateUserAddress(userId, addressId, addressData) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const addressIndex = user.addresses.findIndex(
+      (addr) => addr._id.toString() === addressId
+    );
+
+    if (addressIndex === -1) {
+      throw new Error("Address not found");
+    }
+
+    const {
+      street,
+      city,
+      district,
+      ward,
+      country = "Vietnam",
+      isDefault = false,
+    } = addressData;
+
+    // If this address is being set as default, unset any existing default
+    if (isDefault && !user.addresses[addressIndex].isDefault) {
+      user.addresses.forEach((addr) => {
+        addr.isDefault = false;
+      });
+    }
+
+    // Update the address
+    user.addresses[addressIndex].street =
+      street || user.addresses[addressIndex].street;
+    user.addresses[addressIndex].city =
+      city || user.addresses[addressIndex].city;
+    user.addresses[addressIndex].district =
+      district || user.addresses[addressIndex].district;
+    user.addresses[addressIndex].ward =
+      ward || user.addresses[addressIndex].ward;
+    user.addresses[addressIndex].country = country;
+    user.addresses[addressIndex].isDefault = isDefault;
+
+    await user.save();
+    return user.addresses[addressIndex];
+  }
+
+  // Delete an address
+  async deleteUserAddress(userId, addressId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const addressIndex = user.addresses.findIndex(
+      (addr) => addr._id.toString() === addressId
+    );
+
+    if (addressIndex === -1) {
+      throw new Error("Address not found");
+    }
+
+    const wasDefault = user.addresses[addressIndex].isDefault;
+    user.addresses.splice(addressIndex, 1);
+
+    // If the deleted address was the default and there are other addresses,
+    // make the first one the default
+    if (wasDefault && user.addresses.length > 0) {
+      user.addresses[0].isDefault = true;
+    }
+
+    await user.save();
+    return { success: true };
+  }
+
+  // Set an address as default
+  async setDefaultAddress(userId, addressId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const addressIndex = user.addresses.findIndex(
+      (addr) => addr._id.toString() === addressId
+    );
+
+    if (addressIndex === -1) {
+      throw new Error("Address not found");
+    }
+
+    // Set all addresses to non-default
+    user.addresses.forEach((addr) => {
+      addr.isDefault = false;
+    });
+
+    // Set the selected address as default
+    user.addresses[addressIndex].isDefault = true;
+
+    await user.save();
+    return user.addresses[addressIndex];
+  }
+
+  // Change user password
+  async changePassword(userId, currentPassword, newPassword) {
+    // Validate password requirements
+    if (!newPassword || newPassword.length < 8) {
+      throw new Error("Mật khẩu mới phải có ít nhất 8 ký tự");
+    }
+
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("Không tìm thấy người dùng");
+    }
+
+    // Verify current password
+    const isPasswordValid = await comparePassword(
+      currentPassword,
+      user.password
+    );
+    if (!isPasswordValid) {
+      throw new Error("Mật khẩu hiện tại không chính xác");
+    }
+
+    // Hash the new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update the password
+    user.password = hashedPassword;
+
+    await user.save();
+
+    return { success: true };
   }
 }
 

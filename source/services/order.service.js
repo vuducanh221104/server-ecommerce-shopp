@@ -1,6 +1,26 @@
 import { Order } from "../models/Order.js";
+import { User } from "../models/User.js";
+import { Product } from "../models/Product.js";
 
 class OrderService {
+  // Helper function to find the variant thumb based on color
+  findVariantThumb = (product, colorName) => {
+    if (!product || !product.variants || !Array.isArray(product.variants)) {
+      return product?.thumb || "";
+    }
+
+    // Find the variant with the matching color name
+    const variant = product.variants.find((v) => v.name === colorName);
+
+    // If found, return the first image from the variant's images array
+    if (variant && variant.images && variant.images.length > 0) {
+      return variant.images[0];
+    }
+
+    // Fallback to product thumbnail
+    return product.thumb || "";
+  };
+
   // Lấy tất cả đơn hàng
   getAllOrders = async (query = {}, options = {}) => {
     const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
@@ -34,7 +54,68 @@ class OrderService {
   // Lấy đơn hàng của người dùng
   getUserOrders = async (userId, options = {}) => {
     const query = { user_id: userId };
-    return this.getAllOrders(query, options);
+    const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
+    const skip = (page - 1) * limit;
+
+    // Fetch orders
+    const orders = await Order.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const total = await Order.countDocuments(query);
+
+    // Enhance orders with product information
+    const enhancedOrders = await Promise.all(
+      orders.map(async (order) => {
+        // Process each order item to include product details
+        const enhancedItems = await Promise.all(
+          order.items.map(async (item) => {
+            try {
+              // Fetch product details
+              const product = await Product.findById(item.product_id).lean();
+
+              if (product) {
+                // Find the appropriate thumbnail based on color
+                const thumb = this.findVariantThumb(product, item.colorOrder);
+
+                // Return enhanced item with product details
+                return {
+                  ...item,
+                  productName: product.name,
+                  productSlug: product.slug,
+                  thumb: thumb,
+                };
+              }
+
+              return item;
+            } catch (error) {
+              console.error(
+                `Error fetching product details for ${item.product_id}:`,
+                error
+              );
+              return item;
+            }
+          })
+        );
+
+        return {
+          ...order,
+          items: enhancedItems,
+        };
+      })
+    );
+
+    return {
+      orders: enhancedOrders,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   };
 
   // Tạo đơn hàng mới
@@ -52,6 +133,16 @@ class OrderService {
     }
 
     const newOrder = await Order.create(orderData);
+
+    // Nếu đơn hàng có user_id, thêm order vào danh sách orders của user
+    if (orderData.user_id) {
+      await User.findByIdAndUpdate(
+        orderData.user_id,
+        { $push: { orders: newOrder._id } },
+        { new: true }
+      );
+    }
+
     return newOrder;
   };
 

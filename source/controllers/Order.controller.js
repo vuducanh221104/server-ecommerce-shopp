@@ -111,6 +111,16 @@ class OrderController {
       });
     }
 
+    // Validate item structure
+    for (const item of orderData.items) {
+      if (!item.product_id || !item.priceOrder || !item.quantity) {
+        return res.status(400).json({
+          status: "error",
+          message: "Mỗi sản phẩm phải có product_id, priceOrder, và quantity",
+        });
+      }
+    }
+
     if (!orderData.customer_email) {
       return res.status(400).json({
         status: "error",

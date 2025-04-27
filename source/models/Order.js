@@ -11,21 +11,17 @@ const ShippingAddressSchema = new Schema(
     city: { type: String, required: true },
     country: { type: String, required: true, default: "Vietnam" },
   },
-  { _id: true, timestamps: true }
+  { _id: false, timestamps: true }
 );
 
 // OrderItem schema (embedded)
 const OrderItemSchema = new Schema(
   {
     product_id: { type: Types.ObjectId, ref: "Product", required: true },
-    variant_id: { type: Types.ObjectId }, // Reference to the specific variant if needed
-    name: { type: String, required: true },
-    price: { type: Number, required: true },
+    priceOrder: { type: Number, required: true },
     quantity: { type: Number, required: true },
-    color: { type: String },
-    size: { type: String },
-    thumb: { type: String },
-    slug: { type: String },
+    colorOrder: { type: String },
+    sizeOrder: { type: String },
   },
   { _id: true, timestamps: true }
 );
@@ -46,7 +42,7 @@ const PaymentSchema = new Schema(
     transaction_id: { type: String },
     payment_date: { type: Date },
   },
-  { _id: true, timestamps: true }
+  { _id: false, timestamps: true }
 );
 
 const OrderSchema = new Schema(

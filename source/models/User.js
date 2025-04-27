@@ -33,13 +33,9 @@ const RefreshTokenSchema = new Schema(
 const CartItemSchema = new Schema(
   {
     product_id: { type: Types.ObjectId, ref: "Product", required: true },
-    name: { type: String, required: true },
-    thumb: { type: String },
-    slug: { type: String },
-    price: { type: Number, required: true },
-    quantity: { type: Number, required: true },
-    color: { type: String },
-    size: { type: String },
+    quantity: { type: Number, required: true, default: 1 },
+    sizeOrder: { type: String, required: true },
+    colorOrder: { type: String, required: true },
   },
   { _id: true, timestamps: true }
 );
@@ -78,13 +74,14 @@ const UserSchema = new Schema(
       default: 0,
     },
     gender: { type: String, default: "male" },
-    phone_number: { type: String },
+    phoneNumber: { type: String },
     addresses: [AddressSchema],
     avatar: { type: String },
     dateOfBirth: { type: Date },
     refreshTokens: [RefreshTokenSchema],
     cart: [CartItemSchema],
     wishlist: [WishlistItemSchema],
+    orders: [{ type: Types.ObjectId, ref: "Order" }],
     status: {
       type: Number,
       enum: [0, 1, 2],
