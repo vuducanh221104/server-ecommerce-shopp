@@ -60,8 +60,10 @@ class VNPayService {
     // Sắp xếp theo thứ tự alphabet
     const sortedParams = this.sortObject(vnpParams);
 
-    // Tạo chuỗi query
-    const signData = querystring.stringify(sortedParams, { encode: false });
+    // Tạo chuỗi query cho việc tạo chữ ký - không encode
+    const signData = Object.entries(sortedParams)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("&");
 
     // Tạo chữ ký
     const hmac = crypto.createHmac("sha512", secretKey);
@@ -70,10 +72,11 @@ class VNPayService {
     // Thêm chữ ký vào params
     sortedParams.vnp_SecureHash = signed;
 
-    // Tạo URL thanh toán
-    const paymentUrl = `${this.vnpUrl}?${querystring.stringify(sortedParams, {
-      encode: false,
-    })}`;
+    // Tạo URL thanh toán - Sử dụng encodeURIComponent cho giá trị tham số
+    const queryString = Object.entries(sortedParams)
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .join("&");
+    const paymentUrl = `${this.vnpUrl}?${queryString}`;
 
     return paymentUrl;
   }
@@ -94,8 +97,10 @@ class VNPayService {
     // Sắp xếp theo thứ tự alphabet
     const sortedParams = this.sortObject(vnpParams);
 
-    // Tạo chuỗi query
-    const signData = querystring.stringify(sortedParams, { encode: false });
+    // Tạo chuỗi query - đảm bảo không encode để khớp với VNPay
+    const signData = Object.entries(sortedParams)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("&");
 
     // Tạo chữ ký
     const hmac = crypto.createHmac("sha512", this.secretKey);

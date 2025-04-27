@@ -1,0 +1,126 @@
+### BIẾN MÔI TRƯỜNG
+@baseUrl = http://localhost:4000/api/v1
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2M2JkMjZlMWMwYjljM2I4ZDBjMTAxYiIsInJvbGUiOiJhZG1pbiIsIm5hbWUiOiJBZG1pbiIsImlhdCI6MTcxMTI5MjE0OCwiZXhwIjoxNzExMzc4NTQ4fQ.6C1OeUXzLbqOjvNGcGXx8cTWPX6AYgmNP1w5GyMXJeY
+
+###########################################################
+### 1. API ĐƠN HÀNG (ORDER)
+###########################################################
+
+### 1.1 Tạo đơn hàng mới
+POST {{baseUrl}}/orders
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "items": [
+    {
+      "product_id": "67facaf0f98edc08afb4d812",
+      "name": "Áo Polo Nam Coolmax Air",
+      "price": 249000,
+      "quantity": 2,
+      "variant_id": "67f1452519ecc7c90441f447",
+      "color": "Xanh Navy",
+      "size": "L",
+      "thumb": "https://media3.coolmate.me/uploads/March2023/ao-polo-coolmax-air-thumb.jpg",
+      "slug": "ao-polo-nam-coolmax-air"
+    }
+  ],
+  "customer_email": "customer@example.com",
+  "shipping_address": {
+    "full_name": "Nguyễn Văn A",
+    "phone_number": "0987654321",
+    "street": "123 Đường Lê Lợi",
+    "ward": "Phường Bến Nghé",
+    "district": "Quận 1",
+    "city": "TP. Hồ Chí Minh",
+    "country": "Vietnam"
+  },
+  "payment": {
+    "method": "VNPAY",
+    "status": "PENDING"
+  },
+  "total_amount": 498000
+}
+
+### 1.2 Tạo đơn hàng từ giỏ hàng
+POST {{baseUrl}}/orders/from-cart
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "shipping_address": {
+    "full_name": "Nguyễn Văn A",
+    "phone_number": "0987654321",
+    "street": "123 Đường Lê Lợi",
+    "ward": "Phường Bến Nghé",
+    "district": "Quận 1",
+    "city": "TP. Hồ Chí Minh",
+    "country": "Vietnam"
+  },
+  "payment_method": "COD"
+}
+
+### 1.3 Lấy danh sách đơn hàng của tôi
+GET {{baseUrl}}/orders/my-orders
+Authorization: Bearer {{authToken}}
+
+### 1.4 Lấy chi tiết đơn hàng theo ID
+GET {{baseUrl}}/orders/68049aa5952586ac197f5448
+Authorization: Bearer {{authToken}}
+
+### 1.5 Hủy đơn hàng
+POST {{baseUrl}}/orders/68049aa5952586ac197f5448/cancel
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "reason": "Thay đổi ý định mua hàng"
+}
+
+###########################################################
+### 2. API THANH TOÁN (PAYMENT)
+###########################################################
+
+### 2.1 Lấy danh sách phương thức thanh toán
+GET {{baseUrl}}/payment/methods
+
+### 2.2 Xử lý thanh toán COD
+POST {{baseUrl}}/payment/cod/process
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "orderId": "68049b15952586ac197f5459"
+}
+
+### 2.3 Khởi tạo thanh toán VNPAY
+POST {{baseUrl}}/payment/initialize
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "orderId": "68049edc92b994ba5d05e9a9",
+  "method": "VNPAY",
+  "successUrl": "http://localhost:3000/payment/success",
+  "cancelUrl": "http://localhost:3000/payment/cancel"
+}
+
+### 2.4 Khởi tạo thanh toán MOMO
+POST {{baseUrl}}/payment/initialize
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "orderId": "6804932b8eb5639269af5166",
+  "method": "MOMO",
+  "successUrl": "http://localhost:3000/payment/success",
+  "cancelUrl": "http://localhost:3000/payment/cancel"
+}
+
+### 2.5 Kiểm tra trạng thái thanh toán
+GET {{baseUrl}}/payment/status/68049edc92b994ba5d05e9a9
+Authorization: Bearer {{authToken}}
+
+### 2.6 Lấy thông tin thanh toán của đơn hàng
+GET {{baseUrl}}/payment/order/68049edc92b994ba5d05e9a9
+Authorization: Bearer {{authToken}} 

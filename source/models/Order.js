@@ -32,7 +32,7 @@ const PaymentSchema = new Schema(
     method: {
       type: String,
       required: true,
-      enum: ["COD", "BANK_TRANSFER", "CREDIT_CARD", "MOMO", "ZALOPAY"],
+      enum: ["COD", "BANK_TRANSFER", "CREDIT_CARD", "MOMO", "ZALOPAY", "VNPAY"],
     },
     status: {
       type: String,
