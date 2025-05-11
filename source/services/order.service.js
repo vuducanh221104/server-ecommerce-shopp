@@ -189,7 +189,13 @@ class OrderService {
 
   // Cập nhật trạng thái thanh toán
   updatePaymentStatus = async (id, paymentStatus) => {
-    const allowedStatuses = ["PENDING", "COMPLETED", "FAILED", "REFUNDED"];
+    const allowedStatuses = [
+      "PENDING",
+      "PAID",
+      "COMPLETED",
+      "FAILED",
+      "REFUNDED",
+    ];
 
     if (!allowedStatuses.includes(paymentStatus)) {
       throw new Error("Trạng thái thanh toán không hợp lệ");
@@ -233,28 +239,44 @@ class OrderService {
 
   // Hủy đơn hàng
   cancelOrder = async (id, reason) => {
+    const updatedOrder = await Order.findByIdAndUpdate(
+      id,
+      {
+        status: "CANCELLED",
+        "cancellation.reason": reason,
+        "cancellation.date": new Date(),
+      },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      throw new Error("Không tìm thấy đơn hàng");
+    }
+
+    return updatedOrder;
+  };
+
+  // Xóa đơn hàng
+  deleteOrder = async (id) => {
     const order = await Order.findById(id);
 
     if (!order) {
       throw new Error("Không tìm thấy đơn hàng");
     }
 
-    if (["SHIPPED", "DELIVERED"].includes(order.status)) {
-      throw new Error("Không thể hủy đơn hàng đã giao hoặc đang giao");
+    // If the order has a user_id, remove the order reference from user's orders array
+    if (order.user_id) {
+      await User.findByIdAndUpdate(
+        order.user_id,
+        { $pull: { orders: id } },
+        { new: true }
+      );
     }
 
-    const updatedOrder = await Order.findByIdAndUpdate(
-      id,
-      {
-        status: "CANCELLED",
-        notes: reason
-          ? `${order.notes ? order.notes + " | " : ""}Lý do hủy: ${reason}`
-          : order.notes,
-      },
-      { new: true }
-    );
+    // Delete the order
+    await Order.findByIdAndDelete(id);
 
-    return updatedOrder;
+    return true;
   };
 
   // Format dữ liệu đơn hàng trả về

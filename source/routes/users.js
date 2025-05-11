@@ -20,42 +20,62 @@ router.put(
 );
 
 // User address routes
-router.get("/addresses", authenticateToken, UserController.getUserAddresses);
-router.post("/addresses", authenticateToken, UserController.addUserAddress);
+router.get(
+  "/addresses",
+  // authenticateToken,
+  UserController.getUserAddresses
+);
+router.post(
+  "/addresses",
+  //  authenticateToken,
+  UserController.addUserAddress
+);
 router.put(
   "/addresses/:addressId",
-  authenticateToken,
+  // authenticateToken,
   UserController.updateUserAddress
 );
 router.delete(
   "/addresses/:addressId",
-  authenticateToken,
+  // authenticateToken,
   UserController.deleteUserAddress
 );
 router.put(
   "/addresses/:addressId/default",
-  authenticateToken,
+  // authenticateToken,
   UserController.setDefaultAddress
 );
 
 // Admin routes
 router.get(
   "/",
-  authenticateToken,
-  authorizeRoles(2),
+  // authenticateToken,
+  // authorizeRoles(2),
   UserController.getAllUsers
 );
 router.get(
   "/:id",
-  authenticateToken,
-  authorizeRoles(2),
+  // authenticateToken,
+  // authorizeRoles(2),
   UserController.getUserById
+);
+router.post(
+  "/",
+  // authenticateToken,
+  // authorizeRoles(2),
+  UserController.createUser
 );
 router.put(
   "/:id",
-  authenticateToken,
-  authorizeRoles(2),
+  // authenticateToken,
+  // authorizeRoles(2),
   UserController.updateUserById
+);
+router.delete(
+  "/:id",
+  // authenticateToken,
+  // authorizeRoles(2),
+  UserController.deleteUserById
 );
 
 export default router;

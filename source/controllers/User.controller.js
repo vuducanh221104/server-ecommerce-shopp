@@ -78,6 +78,30 @@ class UserController {
     });
   });
 
+  createUser = CatchError(async (req, res) => {
+    try {
+      const userData = req.body;
+
+      if (!userData.email || !userData.username || !userData.password) {
+        return res.status(400).json({
+          message: "Email, username and password are required",
+        });
+      }
+
+      const newUser = await UserService.createUser(userData);
+
+      return res.status(201).json({
+        message: "User created successfully",
+        user: newUser,
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      return res.status(400).json({
+        message: error.message || "Failed to create user",
+      });
+    }
+  });
+
   updateUserById = CatchError(async (req, res) => {
     const { id } = req.params;
     const updatedUser = await UserService.updateUserById(id, req.body);
@@ -89,6 +113,19 @@ class UserController {
     return res.status(200).json({
       message: "User updated successfully",
       user: updatedUser,
+    });
+  });
+
+  deleteUserById = CatchError(async (req, res) => {
+    const { id } = req.params;
+    const result = await UserService.deleteUserById(id);
+
+    if (!result) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      message: "User deleted successfully",
     });
   });
 

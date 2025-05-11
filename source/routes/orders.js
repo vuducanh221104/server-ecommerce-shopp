@@ -22,6 +22,7 @@ router.get("/user/:id", apiLimiter, mockUser, OrderController.getUserOrders);
 router.get("/:id", apiLimiter, mockUser, OrderController.getOrderById);
 router.post("/:id/cancel", apiLimiter, mockUser, OrderController.cancelOrder);
 router.put("/:id", apiLimiter, mockUser, OrderController.updateOrder);
+router.delete("/:id", apiLimiter, mockUser, OrderController.deleteOrder);
 router.put(
   "/:id/status",
   apiLimiter,

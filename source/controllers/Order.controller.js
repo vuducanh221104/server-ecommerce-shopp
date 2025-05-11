@@ -17,15 +17,39 @@ class OrderController {
       limit,
     });
 
-    const formattedOrders = orders.map((order) =>
-      OrderService.formatOrder(order)
+    // Manually populate product details for each order
+    const populatedOrders = await Promise.all(
+      orders.map(async (order) => {
+        const orderData = OrderService.formatOrder(order);
+
+        // Populate product details for each item
+        orderData.items = await Promise.all(
+          orderData.items.map(async (item) => {
+            const product = await Product.findById(item.product_id).select(
+              "name variants"
+            );
+            // Get image from variants[0].images[0]
+            const variantImage = product?.variants?.[0]?.images?.[0] || "";
+            const variantColorThumb =
+              product?.variants?.[0]?.colorThumbnail || "";
+
+            return {
+              ...item,
+              productName: product?.name || "Unknown Product",
+              productImage: variantImage || variantColorThumb || "", // Use variant image or colorThumbnail as fallback
+            };
+          })
+        );
+
+        return orderData;
+      })
     );
 
     return res.status(200).json({
       status: "success",
       message: "Lấy danh sách đơn hàng thành công",
       data: {
-        orders: formattedOrders,
+        orders: populatedOrders,
         pagination,
       },
     });
@@ -287,6 +311,35 @@ class OrderController {
         data: {
           order: OrderService.formatOrder(updatedOrder),
         },
+      });
+    } catch (error) {
+      return res.status(400).json({
+        status: "error",
+        message: error.message,
+      });
+    }
+  });
+
+  deleteOrder = CatchError(async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      // Check if order exists
+      const order = await OrderService.getOrderById(id);
+
+      if (!order) {
+        return res.status(404).json({
+          status: "error",
+          message: "Không tìm thấy đơn hàng",
+        });
+      }
+
+      // Delete the order
+      await OrderService.deleteOrder(id);
+
+      return res.status(200).json({
+        status: "success",
+        message: "Xóa đơn hàng thành công",
       });
     } catch (error) {
       return res.status(400).json({

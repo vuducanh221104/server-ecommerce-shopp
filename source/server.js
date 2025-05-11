@@ -5,7 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 const app = express();
 import http from "http";
-import startServer from "./config/startServer.js";
+import startServer from "./db/index.js";
 import routes from "./routes/index.js";
 import { apiLimiter } from "./middlewares/rateLimiter.js";
 const server = http.createServer(app);

@@ -57,7 +57,10 @@ class ProductService {
           select: "name slug _id",
         },
       })
-      .populate("material_id", "name slug _id")
+      .populate({
+        path: "material_id",
+        select: "name slug _id", // Ensure we select all fields needed
+      })
       .populate({
         path: "variants",
         select: "name colorThumbnail images sizes",
@@ -199,7 +202,10 @@ class ProductService {
           select: "name slug _id",
         },
       })
-      .populate("material_id", "name slug _id")
+      .populate({
+        path: "material_id",
+        select: "name slug _id",
+      })
       .populate(
         "comments",
         "user_id user_name content rating replyContentAdmin createdAt updatedAt",
@@ -239,50 +245,39 @@ class ProductService {
   }
 
   async searchProducts(query, options = {}) {
-    const { page = 1, limit = 10 } = options;
+    const page = parseInt(options.page) || 1;
+    const limit = parseInt(options.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    if (!query) {
-      return {
-        products: [],
-        search: "",
-        pagination: {
-          total: 0,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          totalPages: 0,
-        },
-      };
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    // Sửa searchQuery để tránh lỗi $options với subdocuments
-    const searchQuery = {
+    // Tìm kiếm sản phẩm
+    const products = await Product.find({
       $or: [
-        // Tìm theo tên sản phẩm
-        { name: new RegExp(query, "i") },
-        // Tìm theo nội dung trong description.body.content
-        { "description.body.content": new RegExp(query, "i") },
-        // Tìm trong các trường khác nếu cần
-        { "variants.name": new RegExp(query, "i") },
+        { name: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
       ],
-    };
-
-    const products = await Product.find(searchQuery)
+    })
       .populate({
         path: "category_id",
-        select: "name slug _id parent",
+        select: "name slug parent",
         populate: {
           path: "parent",
           select: "name slug _id",
         },
       })
-      .populate("material_id", "name slug _id")
+      .populate({
+        path: "material_id",
+        select: "name slug _id",
+      })
       .skip(skip)
-      .limit(parseInt(limit))
+      .limit(limit)
       .sort({ createdAt: -1 });
 
-    const total = await Product.countDocuments(searchQuery);
+    const total = await Product.countDocuments({
+      $or: [
+        { name: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
+      ],
+    });
 
     const formattedProducts = products.map((product) =>
       this.formatProduct(product)
@@ -291,12 +286,7 @@ class ProductService {
     return {
       products: formattedProducts,
       search: query,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: Math.ceil(total / parseInt(limit)),
-      },
+      pagination: this.createPaginationInfo(total, page, limit),
     };
   }
 
@@ -469,6 +459,10 @@ class ProductService {
   }
 
   async updateProduct(id, updateData, userId) {
+    console.log("Starting product update for ID:", id);
+    console.log("Update data:", JSON.stringify(updateData, null, 2));
+    console.log("User ID provided:", userId || "No user ID provided");
+
     // Kiểm tra danh mục tồn tại nếu được cập nhật
     if (updateData.category_id) {
       let categoryIds = [];
@@ -565,6 +559,14 @@ class ProductService {
 
     // Xử lý cập nhật variants
     if (updateData.variants && Array.isArray(updateData.variants)) {
+      console.log(
+        "Processing variants:",
+        JSON.stringify(
+          updateData.variants.map((v) => v.name),
+          null,
+          2
+        )
+      );
       // Tính toán lại tổng số lượng
       let totalQuantity = 0;
 
@@ -573,9 +575,19 @@ class ProductService {
         const sizes =
           variant.sizes?.map((size) => {
             totalQuantity += size.stock || 0;
+
+            // Create a new size object without _id if it's a client-side object
+            // This helps avoid issues with MongoDB ObjectId validation
             return {
               size: size.size,
               stock: size.stock || 0,
+              // Only include _id if it's a valid MongoDB ObjectId
+              // This is a common issue when editing existing records
+              ...(size._id &&
+              typeof size._id === "string" &&
+              /^[0-9a-fA-F]{24}$/.test(size._id)
+                ? { _id: size._id }
+                : {}),
             };
           }) || [];
 
@@ -591,7 +603,16 @@ class ProductService {
       updateData.total_quantity = totalQuantity;
     }
 
+    // Kiểm tra và xử lý cập nhật description.header
+    if (updateData.description && updateData.description.header) {
+      console.log(
+        "Processing description.header:",
+        JSON.stringify(updateData.description.header, null, 2)
+      );
+    }
+
     // Cập nhật thông tin sản phẩm
+    console.log("Final update data:", JSON.stringify(updateData, null, 2));
     const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
@@ -622,11 +643,9 @@ class ProductService {
   }
 
   async getRelatedProducts(productId, limit = 4) {
-    // Tìm sản phẩm
+    // Kiểm tra sản phẩm cơ sở để tìm các sản phẩm liên quan
     const product = await Product.findById(productId);
-    if (!product) {
-      return [];
-    }
+    if (!product) return [];
 
     // Tìm các sản phẩm liên quan dựa trên category_id và material_id
     const relatedProducts = await Product.find({
@@ -636,8 +655,14 @@ class ProductService {
       ],
       _id: { $ne: productId }, // Loại trừ sản phẩm hiện tại
     })
-      .populate("category_id", "name slug _id")
-      .populate("material_id", "name _id")
+      .populate({
+        path: "category_id",
+        select: "name slug _id",
+      })
+      .populate({
+        path: "material_id",
+        select: "name slug _id",
+      })
       .populate({
         path: "variants",
         select: "name color colorThumbnail images",
@@ -869,7 +894,10 @@ class ProductService {
             select: "name slug _id",
           },
         })
-        .populate("material_id", "name slug")
+        .populate({
+          path: "material_id",
+          select: "name slug _id",
+        })
         .sort(sortOption)
         .limit(maxProducts);
 
@@ -918,7 +946,10 @@ class ProductService {
             select: "name slug _id",
           },
         })
-        .populate("material_id", "name slug")
+        .populate({
+          path: "material_id",
+          select: "name slug _id",
+        })
         .skip(skip)
         .limit(limit)
         .sort(sortOption);
@@ -1008,7 +1039,7 @@ class ProductService {
     // Chuẩn hóa description
     let description = {
       header: {
-        material: materials.length > 0 ? materials[0].name : "",
+        material: "", // Remove material from description since we'll use material_id directly
         style: product.style || "",
         responsible: product.responsible || "",
         features: product.features || "",
@@ -1076,7 +1107,8 @@ class ProductService {
         currency: product.price?.currency || "VND",
       },
       comment: formattedComments,
-      category: categories.length > 0 ? categories[0] : null,
+      category: categories,
+      materials: materials,
       variants: formattedVariants,
       tagIsNew: product.tagIsNew || false,
       slug: product.slug || "",

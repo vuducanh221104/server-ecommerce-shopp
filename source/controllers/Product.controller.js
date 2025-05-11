@@ -17,7 +17,9 @@ class ProductController {
     const result = await ProductService.getProducts(filters);
 
     return res.status(200).json({
-      message: "Lấy danh sách sản phẩm thành công",
+      status: "success",
+      message:
+        "Lấy danh sách sản phẩm thành công với category_id và material_id đã được populate",
       products: result.products,
       pagination: result.pagination,
     });
@@ -144,17 +146,29 @@ class ProductController {
 
   updateProduct = CatchError(async (req, res) => {
     const { id } = req.params;
+    console.log("Updating product with ID:", id);
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
 
-    const updatedProduct = await ProductService.updateProduct(
-      id,
-      req.body,
-      req.user._id
-    );
+    try {
+      const updatedProduct = await ProductService.updateProduct(
+        id,
+        req.body,
+        req.user?._id
+      );
 
-    return res.status(200).json({
-      message: "Cập nhật sản phẩm thành công",
-      product: updatedProduct,
-    });
+      console.log("Product updated successfully");
+
+      return res.status(200).json({
+        message: "Cập nhật sản phẩm thành công",
+        product: updatedProduct,
+      });
+    } catch (error) {
+      console.error("Error updating product:", error.message);
+      return res.status(400).json({
+        message: error.message || "Cập nhật sản phẩm thất bại",
+        error: error.message,
+      });
+    }
   });
 
   deleteProduct = CatchError(async (req, res) => {

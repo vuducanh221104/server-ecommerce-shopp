@@ -20,8 +20,8 @@ router.get(
 );
 
 // Routes yêu cầu quyền admin
-router.post("/", isAuth, isAdmin, CategoryController.createCategory);
-router.put("/:id", isAuth, isAdmin, CategoryController.updateCategory);
-router.delete("/:id", isAuth, isAdmin, CategoryController.deleteCategory);
+router.post("/", CategoryController.createCategory);
+router.put("/:id", CategoryController.updateCategory);
+router.delete("/:id", CategoryController.deleteCategory);
 
 export default router;

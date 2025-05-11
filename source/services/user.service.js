@@ -149,6 +149,78 @@ class UserService {
     return this.formatUser(userWithFullCart);
   }
 
+  async createUser(userData) {
+    try {
+      const {
+        username,
+        email,
+        password,
+        fullName,
+        gender = "",
+        phoneNumber = "",
+        dateOfBirth = "",
+        role = 0,
+        status = 1,
+        type = "WEBSITE",
+        addresses = [],
+      } = userData;
+
+      // Check if username or email already exists
+      const existingUser = await User.findOne({
+        $or: [{ username }, { email }],
+      });
+
+      if (existingUser) {
+        if (existingUser.username === username) {
+          throw new Error("Username already exists");
+        }
+        if (existingUser.email === email) {
+          throw new Error("Email already exists");
+        }
+      }
+
+      // Hash the password
+      const hashedPassword = await hashPassword(password);
+
+      // Create new user
+      const newUser = await User.create({
+        username,
+        email,
+        password: hashedPassword,
+        fullName: fullName || username,
+        gender,
+        phoneNumber,
+        dateOfBirth,
+        role,
+        status,
+        type,
+        addresses,
+      });
+
+      return this.formatUser(newUser);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
+  }
+
+  async deleteUserById(id) {
+    try {
+      // Check if user exists
+      const user = await User.findById(id);
+      if (!user) {
+        return null;
+      }
+
+      // Delete the user
+      await User.findByIdAndDelete(id);
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      throw new Error("Failed to delete user");
+    }
+  }
+
   formatUser(user) {
     if (!user) return null;
 
