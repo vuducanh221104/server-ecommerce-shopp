@@ -79,23 +79,37 @@ class OrderController {
     const { id: userId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    const { orders, pagination } = await OrderService.getUserOrders(userId, {
-      page,
-      limit,
-    });
+    console.log("getUserOrders controller called with userId:", userId);
+    
+    try {
+      // Thử tìm kiếm đơn hàng với cả hai cách: dùng ObjectId và dùng string
+      const { orders, pagination } = await OrderService.getUserOrders(userId, {
+        page,
+        limit,
+      });
 
-    const formattedOrders = orders.map((order) =>
-      OrderService.formatOrder(order)
-    );
+      const formattedOrders = orders.map((order) =>
+        OrderService.formatOrder(order)
+      );
 
-    return res.status(200).json({
-      status: "success",
-      message: "Lấy danh sách đơn hàng của người dùng thành công",
-      data: {
-        orders: formattedOrders,
-        pagination,
-      },
-    });
+      // Log kết quả
+      console.log(`Found ${formattedOrders.length} orders for user ${userId}`);
+
+      return res.status(200).json({
+        status: "success",
+        message: "Lấy danh sách đơn hàng của người dùng thành công",
+        data: {
+          orders: formattedOrders,
+          pagination,
+        },
+      });
+    } catch (error) {
+      console.error("Error in getUserOrders controller:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Lỗi khi lấy danh sách đơn hàng: " + error.message,
+      });
+    }
   });
 
   getMyOrders = CatchError(async (req, res) => {

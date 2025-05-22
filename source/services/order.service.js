@@ -53,18 +53,67 @@ class OrderService {
 
   // Lấy đơn hàng của người dùng
   getUserOrders = async (userId, options = {}) => {
-    const query = { user_id: userId };
+    console.log("getUserOrders called with userId:", userId);
+    console.log("userId type:", typeof userId);
+    
+    // Xử lý trường hợp userId là string
+    let query;
+    try {
+      const mongoose = await import('mongoose');
+      if (mongoose.Types.ObjectId.isValid(userId)) {
+        query = { user_id: mongoose.Types.ObjectId(userId) };
+        console.log("Using ObjectId query:", query);
+      } else {
+        query = { user_id: userId };
+        console.log("Using string query:", query);
+      }
+    } catch (error) {
+      console.error("Error converting userId to ObjectId:", error);
+      query = { user_id: userId };
+      console.log("Fallback to string query:", query);
+    }
+    
     const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
     const skip = (page - 1) * limit;
 
-    // Fetch orders
-    const orders = await Order.find(query)
+    console.log("Final query:", JSON.stringify(query));
+    
+    // Fetch orders by user_id
+    let orders = await Order.find(query)
       .sort(sort)
       .skip(skip)
       .limit(limit)
       .lean();
-
-    const total = await Order.countDocuments(query);
+    
+    console.log("Orders found by user_id:", orders.length);
+    
+    // Nếu không tìm thấy đơn hàng theo user_id, thử tìm theo email
+    if (orders.length === 0) {
+      try {
+        // Tìm user để lấy email
+        const User = await import('../models/User.js').then(m => m.User);
+        const user = await User.findById(userId).lean();
+        
+        if (user && user.email) {
+          console.log("Trying to find orders by email:", user.email);
+          
+          // Tìm đơn hàng theo email
+          orders = await Order.find({ customer_email: user.email })
+            .sort(sort)
+            .skip(skip)
+            .limit(limit)
+            .lean();
+            
+          console.log("Orders found by email:", orders.length);
+        }
+      } catch (error) {
+        console.error("Error finding user or orders by email:", error);
+      }
+    }
+    
+    const total = orders.length > 0 ? 
+      await Order.countDocuments(query) : 0;
+    console.log("Total orders count:", total);
 
     // Enhance orders with product information
     const enhancedOrders = await Promise.all(

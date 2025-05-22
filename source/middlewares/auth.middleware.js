@@ -13,7 +13,13 @@ export const authenticateToken = CatchError(async (req, res, next) => {
 
   try {
     const decoded = verifyAccessToken(token);
-    const user = await User.findById(decoded.id).select("-password");
+    const userId = decoded.userId || decoded.id || decoded._id;
+    
+    if (!userId) {
+      return res.status(401).json({ message: "Token không hợp lệ" });
+    }
+
+    const user = await User.findById(userId).select("-password");
 
     if (!user) {
       return res.status(401).json({ message: "Người dùng không tồn tại" });

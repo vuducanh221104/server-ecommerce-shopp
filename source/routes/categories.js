@@ -13,6 +13,12 @@ router.get(
   publicApiLimiter,
   CategoryController.getCategoryBySlug
 );
+
+router.get(
+  "/home/slug/:slug",
+  publicApiLimiter,
+  CategoryController.getCategoryHomeBySlug
+);
 router.get(
   "/:id/children",
   publicApiLimiter,

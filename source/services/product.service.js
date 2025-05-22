@@ -253,7 +253,7 @@ class ProductService {
     const products = await Product.find({
       $or: [
         { name: { $regex: query, $options: "i" } },
-        { description: { $regex: query, $options: "i" } },
+        // { description: { $regex: query, $options: "i" } },
       ],
     })
       .populate({
@@ -275,7 +275,7 @@ class ProductService {
     const total = await Product.countDocuments({
       $or: [
         { name: { $regex: query, $options: "i" } },
-        { description: { $regex: query, $options: "i" } },
+        // { description: { $regex: query, $options: "i" } },
       ],
     });
 

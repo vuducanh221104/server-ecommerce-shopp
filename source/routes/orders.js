@@ -6,6 +6,48 @@ import { mockUser } from "../middlewares/mockUser.middleware.js";
 
 const router = express.Router();
 
+// Debug route để kiểm tra đơn hàng
+router.get("/debug/count", async (req, res) => {
+  try {
+    const { Order } = await import('../models/Order.js');
+    const count = await Order.countDocuments({});
+    res.status(200).json({
+      status: "success",
+      message: `Có ${count} đơn hàng trong database`,
+      count
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Lỗi khi đếm đơn hàng",
+      error: error.message
+    });
+  }
+});
+
+// Debug route để liệt kê tất cả đơn hàng
+router.get("/debug/list", async (req, res) => {
+  try {
+    const { Order } = await import('../models/Order.js');
+    const orders = await Order.find({})
+      .select('user_id customer_email status createdAt')
+      .limit(10)
+      .lean();
+    
+    res.status(200).json({
+      status: "success",
+      message: `Lấy ${orders.length} đơn hàng đầu tiên`,
+      orders
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Lỗi khi lấy danh sách đơn hàng",
+      error: error.message
+    });
+  }
+});
+
 // Routes cho người dùng
 router.get("/my-orders", apiLimiter, mockUser, OrderController.getMyOrders);
 router.post(

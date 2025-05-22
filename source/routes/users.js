@@ -22,27 +22,27 @@ router.put(
 // User address routes
 router.get(
   "/addresses",
-  // authenticateToken,
+  authenticateToken,
   UserController.getUserAddresses
 );
 router.post(
   "/addresses",
-  //  authenticateToken,
+  authenticateToken,
   UserController.addUserAddress
 );
 router.put(
   "/addresses/:addressId",
-  // authenticateToken,
+  authenticateToken,
   UserController.updateUserAddress
 );
 router.delete(
   "/addresses/:addressId",
-  // authenticateToken,
+  authenticateToken,
   UserController.deleteUserAddress
 );
 router.put(
   "/addresses/:addressId/default",
-  // authenticateToken,
+  authenticateToken,
   UserController.setDefaultAddress
 );
 

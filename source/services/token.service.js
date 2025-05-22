@@ -30,7 +30,7 @@ class TokenService {
         );
       }
 
-      const refreshTokenPayload = { id: userId };
+      const refreshTokenPayload = { userId: userId };
       const refreshToken = generateRefreshToken(refreshTokenPayload);
 
       const decodedToken = verifyRefreshToken(refreshToken);
@@ -60,7 +60,7 @@ class TokenService {
   }
 
   generateAccessToken(user) {
-    const payload = { id: user._id, role: user.role };
+    const payload = { userId: user._id, role: user.role };
     return generateAccessToken(payload);
   }
 

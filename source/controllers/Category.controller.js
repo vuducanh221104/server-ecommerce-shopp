@@ -61,6 +61,27 @@ class CategoryController {
     }); 
   });
 
+  getCategoryHomeBySlug = CatchError(async (req, res) => {
+    const { slug } = req.params;
+    const category = await CategoryService.getCategoryBySlug(slug);
+
+    if (!category) {
+      return res.status(404).json({
+        status: "error",
+        message: "Không tìm thấy danh mục",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Lấy thông tin danh mục thành công",
+      data: {
+        category: CategoryService.formatCategory(category),
+      },
+    }); 
+  });
+
+
 
   createCategory = CatchError(async (req, res) => {
     const categoryData = req.body;

@@ -59,20 +59,18 @@ class AuthService {
     };
   }
 
-  async register(userData) {
+  async register(userData, ipAddress, userAgent) {
     const {
       username,
       email,
       password,
       fullName,
       phone_number,
-      ipAddress,
-      userAgent,
     } = userData;
 
     console.log(`Check data: ${JSON.stringify(userData)}`);
 
-    if (!username || !email || !password || !fullName) {
+    if ( !email || !password ) {
       throw new Error("Tất cả các trường đều là bắt buộc");
     }
 
@@ -144,7 +142,13 @@ class AuthService {
       throw new Error("Refresh token không hợp lệ");
     }
 
-    const user = await User.findById(decoded.userId);
+    // Use userId or id from the token payload
+    const userId = decoded.userId || decoded.id || decoded._id;
+    if (!userId) {
+      throw new Error("Token không hợp lệ");
+    }
+
+    const user = await User.findById(userId);
     if (!user) {
       throw new Error("Người dùng không tồn tại");
     }
