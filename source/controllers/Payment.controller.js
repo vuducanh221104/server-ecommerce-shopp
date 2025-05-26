@@ -45,15 +45,18 @@ class PaymentController {
       data: result,
     });
   });
-
   /**
    * Xử lý callback từ VNPay
    */
   handleVNPayReturn = CatchError(async (req, res) => {
     const vnpParams = req.query;
 
+    console.log("VNPay return params:", vnpParams);
+
     try {
       const result = await PaymentService.confirmVNPayPayment(vnpParams);
+
+      console.log("VNPay payment confirmation result:", result);
 
       // Redirect về trang thành công hoặc thất bại
       const redirectPath = result.success
