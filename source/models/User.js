@@ -1,6 +1,5 @@
 import { Schema, Types, model } from "mongoose";
 
-// Address schema (embedded)
 const AddressSchema = new Schema(
   {
     street: { type: String, required: true },
@@ -13,7 +12,6 @@ const AddressSchema = new Schema(
   { _id: true, timestamps: true }
 );
 
-// RefreshToken schema (embedded)
 const RefreshTokenSchema = new Schema(
   {
     token: { type: String, required: true },
@@ -26,10 +24,6 @@ const RefreshTokenSchema = new Schema(
   { _id: true }
 );
 
-// Create an index for the token field for faster lookups
-// This accomplishes similar functionality to the unique constraint in the original
-
-// Cart item schema (embedded)
 const CartItemSchema = new Schema(
   {
     product_id: { type: Types.ObjectId, ref: "Product", required: true },
@@ -40,7 +34,6 @@ const CartItemSchema = new Schema(
   { _id: true, timestamps: true }
 );
 
-// Wishlist item schema (embedded)
 const WishlistItemSchema = new Schema(
   {
     product_id: { type: Types.ObjectId, ref: "Product", required: true },
@@ -95,7 +88,6 @@ const UserSchema = new Schema(
   }
 );
 
-// Index for faster token lookups in the embedded array
 UserSchema.index({ "refreshTokens.token": 1 });
 
 export const User = model("User", UserSchema);
