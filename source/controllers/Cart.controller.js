@@ -15,7 +15,7 @@ class CartController {
 
   addToCart = CatchError(async (req, res) => {
     const userId = req.user._id;
-    const { product_id, quantity, color, size } = req.body;
+    const { product_id, quantity, colorOrder, sizeOrder } = req.body;
 
     if (!product_id) {
       return res.status(400).json({
@@ -26,8 +26,8 @@ class CartController {
     const cartItem = await CartService.addToCart(userId, {
       product_id,
       quantity: quantity || 1,
-      color,
-      size,
+      colorOrder,
+      sizeOrder,
     });
 
     return res.status(200).json({

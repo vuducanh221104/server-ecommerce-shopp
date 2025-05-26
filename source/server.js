@@ -5,16 +5,20 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 const app = express();
 import http from "http";
-import startServer from "./config/startServer.js";
+import startServer from "./db/index.js";
 import routes from "./routes/index.js";
 import { apiLimiter } from "./middlewares/rateLimiter.js";
 const server = http.createServer(app);
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5000"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://localhost:3001",
+    ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -23,6 +27,7 @@ app.use(
       "Origin",
       "Access-Control-Allow-Origin",
       "Access-Control-Allow-Headers",
+      "Access-Control-Allow-Methods",
     ],
   })
 );

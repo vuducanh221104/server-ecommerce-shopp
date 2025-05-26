@@ -1,6 +1,26 @@
 import { Order } from "../models/Order.js";
+import { User } from "../models/User.js";
+import { Product } from "../models/Product.js";
 
 class OrderService {
+  // Helper function to find the variant thumb based on color
+  findVariantThumb = (product, colorName) => {
+    if (!product || !product.variants || !Array.isArray(product.variants)) {
+      return product?.thumb || "";
+    }
+
+    // Find the variant with the matching color name
+    const variant = product.variants.find((v) => v.name === colorName);
+
+    // If found, return the first image from the variant's images array
+    if (variant && variant.images && variant.images.length > 0) {
+      return variant.images[0];
+    }
+
+    // Fallback to product thumbnail
+    return product.thumb || "";
+  };
+
   // Lấy tất cả đơn hàng
   getAllOrders = async (query = {}, options = {}) => {
     const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
@@ -34,7 +54,68 @@ class OrderService {
   // Lấy đơn hàng của người dùng
   getUserOrders = async (userId, options = {}) => {
     const query = { user_id: userId };
-    return this.getAllOrders(query, options);
+    const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
+    const skip = (page - 1) * limit;
+
+    // Fetch orders
+    const orders = await Order.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const total = await Order.countDocuments(query);
+
+    // Enhance orders with product information
+    const enhancedOrders = await Promise.all(
+      orders.map(async (order) => {
+        // Process each order item to include product details
+        const enhancedItems = await Promise.all(
+          order.items.map(async (item) => {
+            try {
+              // Fetch product details
+              const product = await Product.findById(item.product_id).lean();
+
+              if (product) {
+                // Find the appropriate thumbnail based on color
+                const thumb = this.findVariantThumb(product, item.colorOrder);
+
+                // Return enhanced item with product details
+                return {
+                  ...item,
+                  productName: product.name,
+                  productSlug: product.slug,
+                  thumb: thumb,
+                };
+              }
+
+              return item;
+            } catch (error) {
+              console.error(
+                `Error fetching product details for ${item.product_id}:`,
+                error
+              );
+              return item;
+            }
+          })
+        );
+
+        return {
+          ...order,
+          items: enhancedItems,
+        };
+      })
+    );
+
+    return {
+      orders: enhancedOrders,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   };
 
   // Tạo đơn hàng mới
@@ -52,6 +133,16 @@ class OrderService {
     }
 
     const newOrder = await Order.create(orderData);
+
+    // Nếu đơn hàng có user_id, thêm order vào danh sách orders của user
+    if (orderData.user_id) {
+      await User.findByIdAndUpdate(
+        orderData.user_id,
+        { $push: { orders: newOrder._id } },
+        { new: true }
+      );
+    }
+
     return newOrder;
   };
 
@@ -98,7 +189,13 @@ class OrderService {
 
   // Cập nhật trạng thái thanh toán
   updatePaymentStatus = async (id, paymentStatus) => {
-    const allowedStatuses = ["PENDING", "COMPLETED", "FAILED", "REFUNDED"];
+    const allowedStatuses = [
+      "PENDING",
+      "PAID",
+      "COMPLETED",
+      "FAILED",
+      "REFUNDED",
+    ];
 
     if (!allowedStatuses.includes(paymentStatus)) {
       throw new Error("Trạng thái thanh toán không hợp lệ");
@@ -142,28 +239,44 @@ class OrderService {
 
   // Hủy đơn hàng
   cancelOrder = async (id, reason) => {
+    const updatedOrder = await Order.findByIdAndUpdate(
+      id,
+      {
+        status: "CANCELLED",
+        "cancellation.reason": reason,
+        "cancellation.date": new Date(),
+      },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      throw new Error("Không tìm thấy đơn hàng");
+    }
+
+    return updatedOrder;
+  };
+
+  // Xóa đơn hàng
+  deleteOrder = async (id) => {
     const order = await Order.findById(id);
 
     if (!order) {
       throw new Error("Không tìm thấy đơn hàng");
     }
 
-    if (["SHIPPED", "DELIVERED"].includes(order.status)) {
-      throw new Error("Không thể hủy đơn hàng đã giao hoặc đang giao");
+    // If the order has a user_id, remove the order reference from user's orders array
+    if (order.user_id) {
+      await User.findByIdAndUpdate(
+        order.user_id,
+        { $pull: { orders: id } },
+        { new: true }
+      );
     }
 
-    const updatedOrder = await Order.findByIdAndUpdate(
-      id,
-      {
-        status: "CANCELLED",
-        notes: reason
-          ? `${order.notes ? order.notes + " | " : ""}Lý do hủy: ${reason}`
-          : order.notes,
-      },
-      { new: true }
-    );
+    // Delete the order
+    await Order.findByIdAndDelete(id);
 
-    return updatedOrder;
+    return true;
   };
 
   // Format dữ liệu đơn hàng trả về
