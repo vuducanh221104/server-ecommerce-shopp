@@ -48,7 +48,7 @@ class PaymentService {
           const vnpayData = {
             orderId: orderId.toString(),
             amount: order.total_amount,
-            orderDescription: `Thanh toán đơn hàng #${orderId}`,
+            orderDescription: `Thanh toan don hang ${orderId}`, // Bỏ ký tự # và dấu để tránh lỗi encoding
             clientIp: paymentData.clientIp,
           };
 

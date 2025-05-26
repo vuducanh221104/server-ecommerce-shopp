@@ -99,10 +99,10 @@ Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-  "orderId": "68049edc92b994ba5d05e9a9",
+  "orderId": "683420057927e09e6ce3c63b",
   "method": "VNPAY",
-  "successUrl": "http://localhost:3000/payment/success",
-  "cancelUrl": "http://localhost:3000/payment/cancel"
+  "successUrl": "http://localhost:4000/payment/success",
+  "cancelUrl": "http://localhost:4000/payment/cancel"
 }
 
 ### 2.4 Khởi tạo thanh toán MOMO
