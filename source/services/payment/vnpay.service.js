@@ -11,15 +11,7 @@ class VNPayService {
     this.vnpUrl = process.env.VNPAY_URL;
     this.returnUrl = process.env.VNPAY_RETURN_URL;
 
-    // Log cấu hình để debug
-    console.log("VNPay Configuration:");
-    console.log("TMN Code:", this.tmnCode);
-    console.log(
-      "Secret Key:",
-      this.secretKey ? "***configured***" : "not configured"
-    );
-    console.log("VNP URL:", this.vnpUrl);
-    console.log("Return URL:", this.returnUrl);
+   
 
     // Kiểm tra cấu hình
     if (!this.tmnCode || !this.secretKey || !this.vnpUrl || !this.returnUrl) {

@@ -6,7 +6,7 @@ import rateLimit from "express-rate-limit";
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: 100, // Giới hạn mỗi IP đến 100 request mỗi cửa sổ thời gian
+  max: 1000, // Giới hạn mỗi IP đến 100 request mỗi cửa sổ thời gian
   standardHeaders: true, // Trả về thông tin rate limit trong header `RateLimit-*`
   legacyHeaders: false, // Tắt header `X-RateLimit-*`
   message: {

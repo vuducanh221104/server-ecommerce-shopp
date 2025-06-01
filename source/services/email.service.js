@@ -29,7 +29,6 @@ class EmailService {
         ...mailOptions,
       });
 
-      console.log(`Email sent: ${info.messageId}`);
       return { success: true, messageId: info.messageId };
     } catch (error) {
       console.error("Error sending email:", error);

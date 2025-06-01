@@ -8,6 +8,7 @@ import orderRouter from "./orders.js";
 import paymentRouter from "./payment.js";
 import uploadRoutes from "../upload/uploadCloudinary.js";
 import statsRouter from "./stats.js";
+import commentRouter from "./comments.js";
 
 function routes(app) {
   app.use("/api/v1/auth", authRouter);
@@ -20,6 +21,7 @@ function routes(app) {
   app.use("/api/v1/payment", paymentRouter);
   app.use("/api/v1/upload", uploadRoutes);
   app.use("/api/v1/stats", statsRouter);
+  app.use("/api/v1/comments", commentRouter);
 }
 
 export default routes;

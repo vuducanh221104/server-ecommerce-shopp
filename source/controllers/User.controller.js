@@ -19,8 +19,6 @@ class UserController {
   updateProfile = CatchError(async (req, res) => {
     const userId = req.user._id;
 
-    // Log the incoming request data for debugging
-    console.log("Update profile request:", req.body);
 
     if (req.body.password && !req.body.currentPassword) {
       return res.status(400).json({ message: "Current password is required" });

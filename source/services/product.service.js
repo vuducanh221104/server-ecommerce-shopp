@@ -459,9 +459,7 @@ class ProductService {
   }
 
   async updateProduct(id, updateData, userId) {
-    console.log("Starting product update for ID:", id);
-    console.log("Update data:", JSON.stringify(updateData, null, 2));
-    console.log("User ID provided:", userId || "No user ID provided");
+
 
     // Kiểm tra danh mục tồn tại nếu được cập nhật
     if (updateData.category_id) {
@@ -559,14 +557,7 @@ class ProductService {
 
     // Xử lý cập nhật variants
     if (updateData.variants && Array.isArray(updateData.variants)) {
-      console.log(
-        "Processing variants:",
-        JSON.stringify(
-          updateData.variants.map((v) => v.name),
-          null,
-          2
-        )
-      );
+   
       // Tính toán lại tổng số lượng
       let totalQuantity = 0;
 
@@ -605,14 +596,10 @@ class ProductService {
 
     // Kiểm tra và xử lý cập nhật description.header
     if (updateData.description && updateData.description.header) {
-      console.log(
-        "Processing description.header:",
-        JSON.stringify(updateData.description.header, null, 2)
-      );
+   
     }
 
     // Cập nhật thông tin sản phẩm
-    console.log("Final update data:", JSON.stringify(updateData, null, 2));
     const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,

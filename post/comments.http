@@ -1,0 +1,34 @@
+@baseUrl = http://localhost:3001/api/v1
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### Get Product Comments
+GET {{baseUrl}}/comments/product/6801234567890abcdef12345
+Content-Type: application/json
+
+### Get Comment Statistics
+GET {{baseUrl}}/comments/product/6801234567890abcdef12345/stats
+Content-Type: application/json
+
+### Add Comment to Product (Requires Authentication)
+POST {{baseUrl}}/comments/product/6801234567890abcdef12345
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "content": "Sản phẩm rất tốt, đáng tiền!",
+  "rating": 5
+}
+
+### Delete Comment (Requires Authentication and ownership or admin rights)
+DELETE {{baseUrl}}/comments/product/6801234567890abcdef12345/comment/6801234567890abcdef67890
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### Update Comment Status (Admin only)
+PATCH {{baseUrl}}/comments/product/6801234567890abcdef12345/comment/6801234567890abcdef67890/status
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "status": "APPROVED"
+} 

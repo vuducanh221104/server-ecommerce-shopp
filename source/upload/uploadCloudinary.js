@@ -6,8 +6,6 @@ import { CloudinaryStorage } from "multer-storage-cloudinary";
 // TEST
 const router = express.Router();
 
-// Add debugging log
-console.log("Cloudinary config initialized:", cloudinary.config().cloud_name);
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
@@ -30,14 +28,14 @@ const upload = multer({
 
 router.post("/", upload.array("img", 20), async (req, res) => {
   try {
-    console.log("Upload request received", { files: req.files?.length });
+
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
     const data = req.files;
-    console.log("Files uploaded successfully", { count: data.length });
+
 
     // Return more detailed information
     res.json(data);

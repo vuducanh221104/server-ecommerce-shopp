@@ -2,9 +2,12 @@ import express from "express";
 import OrderController from "../controllers/Order.controller.js";
 import { isAdmin, isAuth } from "../middlewares/auth.middleware.js";
 import { apiLimiter } from "../middlewares/rateLimiter.js";
-import { mockUser } from "../middlewares/mockUser.middleware.js";
 
 const router = express.Router();
+
+// Add a new route to check if user can review a product
+router.get("/can-review/:productId", isAuth, OrderController.canReviewProduct);
+
 
 // Debug route để kiểm tra đơn hàng
 router.get("/debug/count", async (req, res) => {
@@ -49,43 +52,51 @@ router.get("/debug/list", async (req, res) => {
 });
 
 // Routes cho người dùng
-router.get("/my-orders", apiLimiter, mockUser, OrderController.getMyOrders);
+router.get("/my-orders", apiLimiter, isAuth, OrderController.getMyOrders);
 router.post(
   "/from-cart",
   apiLimiter,
-  mockUser,
+  isAuth,
   OrderController.createOrderFromCart
 );
 
 // Routes cụ thể với param user_id
-router.get("/user/:id", apiLimiter, mockUser, OrderController.getUserOrders);
+router.get("/user/:id", apiLimiter, isAuth, async (req, res, next) => {
+  // Log thông tin để debug
+  console.log(`[DEBUG] Getting orders for user: ${req.params.id}`);
+  console.log(`[DEBUG] Query params:`, req.query);
+  
+  // Tiếp tục xử lý
+  return OrderController.getUserOrders(req, res, next);
+});
 
 // Routes với param id
-router.get("/:id", apiLimiter, mockUser, OrderController.getOrderById);
-router.post("/:id/cancel", apiLimiter, mockUser, OrderController.cancelOrder);
-router.put("/:id", apiLimiter, mockUser, OrderController.updateOrder);
-router.delete("/:id", apiLimiter, mockUser, OrderController.deleteOrder);
+router.get("/:id", apiLimiter, isAuth, OrderController.getOrderById);
+router.post("/:id/cancel", apiLimiter, isAuth, OrderController.cancelOrder);
+router.put("/:id", apiLimiter, isAuth, OrderController.updateOrder);
+router.delete("/:id", apiLimiter, isAuth, OrderController.deleteOrder);
 router.put(
   "/:id/status",
   apiLimiter,
-  mockUser,
+  isAuth,
   OrderController.updateOrderStatus
 );
 router.put(
   "/:id/payment",
   apiLimiter,
-  mockUser,
+  isAuth,
   OrderController.updatePaymentStatus
 );
 router.put(
   "/:id/tracking",
   apiLimiter,
-  mockUser,
+  isAuth,
   OrderController.addTrackingInfo
 );
 
 // Routes còn lại
-router.get("/", apiLimiter, mockUser, OrderController.getAllOrders);
-router.post("/", apiLimiter, mockUser, OrderController.createOrder);
+router.get("/", isAuth, OrderController.getAllOrders);
+router.post("/", isAuth, OrderController.createOrder);
+
 
 export default router;

@@ -13,7 +13,6 @@ class AuthService {
     const isEmail = identifier.includes("@");
 
     // Log để debug
-    console.log("Login attempt with:", { identifier, isEmail });
 
     // Tìm người dùng theo email hoặc số điện thoại
     let user;
@@ -23,8 +22,7 @@ class AuthService {
       user = await User.findOne({ phone_number: identifier });
     }
 
-    // Log kết quả tìm kiếm
-    console.log("User found:", user ? "Yes" : "No");
+
 
     if (!user) {
       throw new Error("Thông tin đăng nhập không hợp lệ");
@@ -68,7 +66,6 @@ class AuthService {
       phone_number,
     } = userData;
 
-    console.log(`Check data: ${JSON.stringify(userData)}`);
 
     if ( !email || !password ) {
       throw new Error("Tất cả các trường đều là bắt buộc");

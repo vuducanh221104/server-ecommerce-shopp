@@ -146,8 +146,7 @@ class ProductController {
 
   updateProduct = CatchError(async (req, res) => {
     const { id } = req.params;
-    console.log("Updating product with ID:", id);
-    console.log("Request body:", JSON.stringify(req.body, null, 2));
+
 
     try {
       const updatedProduct = await ProductService.updateProduct(
@@ -156,7 +155,6 @@ class ProductController {
         req.user?._id
       );
 
-      console.log("Product updated successfully");
 
       return res.status(200).json({
         message: "Cập nhật sản phẩm thành công",

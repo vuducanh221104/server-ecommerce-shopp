@@ -85,7 +85,6 @@ class CategoryController {
 
   createCategory = CatchError(async (req, res) => {
     const categoryData = req.body;
-    console.log("Request body:", categoryData); // Debug để kiểm tra body
 
     // Kiểm tra dữ liệu đầu vào
     if (!categoryData.name || !categoryData.slug) {

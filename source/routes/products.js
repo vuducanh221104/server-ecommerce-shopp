@@ -28,9 +28,9 @@ router.get(
   publicApiLimiter,
   ProductController.getProductsByCategorySlug
 );
-router.get("/slug/:slug", publicApiLimiter, ProductController.getProductBySlug);
-router.get("/", publicApiLimiter, ProductController.getAllProducts);
-router.get("/:id", publicApiLimiter, ProductController.getProductById);
+router.get("/slug/:slug", ProductController.getProductBySlug);
+router.get("/", ProductController.getAllProducts);
+router.get("/:id", ProductController.getProductById);
 
 // Routes yêu cầu quyền admin
 router.post("/", ProductController.createProduct);

@@ -39,7 +39,14 @@ const CommentSchema = new Schema(
       enum: ["PENDING", "APPROVED", "REJECTED", "FLAGGED"],
       default: "PENDING",
     },
-    replyContentAdmin: { type: String, default: "" },
+    replyContentAdmin: {
+      type: [{
+        content: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+        adminId: { type: String, default: "system" }
+      }],
+      default: []
+    },
     likes: [{ type: Types.ObjectId, ref: "User" }],
     issues: [
       {
@@ -47,7 +54,7 @@ const CommentSchema = new Schema(
         enum: ["INAPPROPRIATE", "SPAM", "OFFENSIVE", "MISLEADING", "OTHER"],
       },
     ],
-    replies: [{ type: Types.ObjectId }],
+    // replies: [{ type: Types.ObjectId }],
     parent_id: { type: Types.ObjectId, default: null },
     images: [{ type: String }],
     verified_purchase: { type: Boolean, default: false },

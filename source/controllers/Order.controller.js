@@ -2,6 +2,7 @@ import OrderService from "../services/order.service.js";
 import { CatchError } from "../config/catchError.js";
 import { Product } from "../models/Product.js";
 import { User } from "../models/User.js";
+import { Order } from "../models/Order.js";
 
 class OrderController {
   getAllOrders = CatchError(async (req, res) => {
@@ -79,7 +80,6 @@ class OrderController {
     const { id: userId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    console.log("getUserOrders controller called with userId:", userId);
     
     try {
       // Thử tìm kiếm đơn hàng với cả hai cách: dùng ObjectId và dùng string
@@ -92,8 +92,6 @@ class OrderController {
         OrderService.formatOrder(order)
       );
 
-      // Log kết quả
-      console.log(`Found ${formattedOrders.length} orders for user ${userId}`);
 
       return res.status(200).json({
         status: "success",
@@ -441,6 +439,71 @@ class OrderController {
       return res.status(400).json({
         status: "error",
         message: error.message,
+      });
+    }
+  });
+
+  // Add a new controller method to check if a user can review a product
+  canReviewProduct = CatchError(async (req, res) => {
+    const { productId } = req.params;
+    const userId = req.user.id;
+
+    console.log(`[DEBUG] Checking if user ${userId} can review product ${productId}`);
+
+    if (!userId) {
+      console.log("[DEBUG] No user ID found in request");
+      return res.status(401).json({
+        status: "error",
+        message: "Bạn cần đăng nhập để kiểm tra trạng thái đánh giá",
+        data: {
+          canReview: false
+        }
+      });
+    }
+
+    try {
+      // Check if user has purchased this product with a DELIVERED or COMPLETED status
+      const orders = await Order.find({
+        user_id: userId,
+        status: { $in: ["DELIVERED", "COMPLETED"] },
+        "items.product_id": productId
+      });
+      console.log(`[DEBUG] Found ${orders.length} eligible orders for user ${userId} and product ${productId}`);
+      console.log(`[DEBUG] Order status check: looking for status in ["DELIVERED", "COMPLETED"]`);
+      
+      if (orders.length > 0) {
+        console.log(`[DEBUG] Order found with status: ${orders[0].status}`);
+      }
+
+      // Also check if user has already reviewed this product
+      const product = await Product.findOne({
+        _id: productId,
+        "comments.user_id": userId
+      });
+
+      console.log(`[DEBUG] User has already reviewed: ${product ? 'Yes' : 'No'}`);
+
+      // User can review if they have a delivered order and haven't reviewed the product yet
+      const canReview = orders.length > 0 && !product;
+      console.log(`[DEBUG] Final canReview decision: ${canReview}`);
+
+      return res.status(200).json({
+        status: "success",
+        message: canReview 
+          ? "Bạn có thể đánh giá sản phẩm này" 
+          : "Bạn không đủ điều kiện để đánh giá sản phẩm này",
+        data: {
+          canReview
+        }
+      });
+    } catch (error) {
+      console.error("[DEBUG] Error in canReviewProduct:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Lỗi khi kiểm tra trạng thái đánh giá: " + error.message,
+        data: {
+          canReview: false
+        }
       });
     }
   });

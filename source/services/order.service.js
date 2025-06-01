@@ -53,8 +53,6 @@ class OrderService {
 
   // Lấy đơn hàng của người dùng
   getUserOrders = async (userId, options = {}) => {
-    console.log("getUserOrders called with userId:", userId);
-    console.log("userId type:", typeof userId);
     
     // Xử lý trường hợp userId là string
     let query;
@@ -62,21 +60,18 @@ class OrderService {
       const mongoose = await import('mongoose');
       if (mongoose.Types.ObjectId.isValid(userId)) {
         query = { user_id: mongoose.Types.ObjectId(userId) };
-        console.log("Using ObjectId query:", query);
       } else {
         query = { user_id: userId };
-        console.log("Using string query:", query);
       }
     } catch (error) {
       console.error("Error converting userId to ObjectId:", error);
       query = { user_id: userId };
-      console.log("Fallback to string query:", query);
     }
     
     const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
     const skip = (page - 1) * limit;
 
-    console.log("Final query:", JSON.stringify(query));
+    console.log(`[DEBUG] Searching orders for user_id: ${userId}`);
     
     // Fetch orders by user_id
     let orders = await Order.find(query)
@@ -85,8 +80,11 @@ class OrderService {
       .limit(limit)
       .lean();
     
-    console.log("Orders found by user_id:", orders.length);
+    console.log(`[DEBUG] Found ${orders.length} orders by user_id`);
     
+    let userEmail = null;
+    let emailQuery = null;
+
     // Nếu không tìm thấy đơn hàng theo user_id, thử tìm theo email
     if (orders.length === 0) {
       try {
@@ -95,25 +93,42 @@ class OrderService {
         const user = await User.findById(userId).lean();
         
         if (user && user.email) {
-          console.log("Trying to find orders by email:", user.email);
+          userEmail = user.email;
+          emailQuery = { customer_email: user.email };
+          console.log(`[DEBUG] User email found: ${userEmail}, searching orders by email`);
           
           // Tìm đơn hàng theo email
-          orders = await Order.find({ customer_email: user.email })
+          orders = await Order.find(emailQuery)
             .sort(sort)
             .skip(skip)
             .limit(limit)
             .lean();
             
-          console.log("Orders found by email:", orders.length);
+          console.log(`[DEBUG] Found ${orders.length} orders by email`);
         }
       } catch (error) {
         console.error("Error finding user or orders by email:", error);
       }
     }
     
-    const total = orders.length > 0 ? 
-      await Order.countDocuments(query) : 0;
-    console.log("Total orders count:", total);
+    // Đếm tổng số đơn hàng theo cả user_id và email (nếu có)
+    let total = 0;
+    if (orders.length > 0) {
+      if (userEmail && emailQuery) {
+        // Nếu tìm theo email, đếm theo email
+        total = await Order.countDocuments(emailQuery);
+        console.log(`[DEBUG] Counted ${total} total orders by email`);
+      } else {
+        // Nếu tìm theo user_id, đếm theo user_id
+        total = await Order.countDocuments(query);
+        console.log(`[DEBUG] Counted ${total} total orders by user_id`);
+      }
+    }
+
+    // For debugging: log the status of each order
+    orders.forEach((order, index) => {
+      console.log(`[DEBUG] Order ${index + 1} - ID: ${order._id}, Status: ${order.status}`);
+    });
 
     // Enhance orders with product information
     const enhancedOrders = await Promise.all(
@@ -217,9 +232,14 @@ class OrderService {
       "DELIVERED",
       "CANCELLED",
       "RETURNED",
+      "COMPLETED"
     ];
 
+    console.log(`[DEBUG] Attempting to update order ${id} to status: ${status}`);
+    console.log(`[DEBUG] Allowed statuses: ${allowedStatuses.join(', ')}`);
+
     if (!allowedStatuses.includes(status)) {
+      console.error(`[ERROR] Invalid order status: ${status}`);
       throw new Error("Trạng thái đơn hàng không hợp lệ");
     }
 
@@ -230,9 +250,11 @@ class OrderService {
     );
 
     if (!updatedOrder) {
+      console.error(`[ERROR] Order not found with ID: ${id}`);
       throw new Error("Không tìm thấy đơn hàng");
     }
 
+    console.log(`[DEBUG] Order ${id} successfully updated to status: ${updatedOrder.status}`);
     return updatedOrder;
   };
 
