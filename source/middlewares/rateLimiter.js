@@ -21,7 +21,7 @@ export const apiLimiter = rateLimit({
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: 10, // Giới hạn mỗi IP đến 10 request mỗi cửa sổ thời gian
+  max: 1000, // Giới hạn mỗi IP đến 10 request mỗi cửa sổ thời gian
   standardHeaders: true,
   legacyHeaders: false,
   message: {

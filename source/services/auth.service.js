@@ -1,7 +1,7 @@
 import { User } from "../models/index.js";
 import TokenService from "./token.service.js";
 import UserService from "./user.service.js";
-import { hashPassword, comparePassword } from "../utils/index.js";
+import { hashPassword, comparePassword, verifyRefreshToken } from "../utils/index.js";
 
 class AuthService {
   async login(identifier, password, ipAddress, userAgent) {
@@ -134,40 +134,45 @@ class AuthService {
       throw new Error("Refresh token không được cung cấp");
     }
 
-    const decoded = await TokenService.verifyRefreshToken(token);
-    if (!decoded) {
-      throw new Error("Refresh token không hợp lệ");
+    try {
+      const decoded = verifyRefreshToken(token);
+      if (!decoded) {
+        throw new Error("Refresh token không hợp lệ");
+      }
+
+      // Use userId or id from the token payload
+      const userId = decoded.userId || decoded.id || decoded._id;
+      if (!userId) {
+        throw new Error("Token không hợp lệ");
+      }
+
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error("Người dùng không tồn tại");
+      }
+
+      const tokenDoc = user.refreshTokens.find(
+        (t) => t.token === token && !t.isRevoked
+      );
+
+      if (!tokenDoc) {
+        throw new Error("Refresh token không hợp lệ hoặc đã bị thu hồi");
+      }
+
+      if (new Date(tokenDoc.expiresAt) < new Date()) {
+        throw new Error("Refresh token đã hết hạn");
+      }
+
+      const accessToken = TokenService.generateAccessToken(user);
+
+      return {
+        accessToken,
+        user: UserService.formatUser(user),
+      };
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      throw new Error(error.message || "Refresh token không hợp lệ");
     }
-
-    // Use userId or id from the token payload
-    const userId = decoded.userId || decoded.id || decoded._id;
-    if (!userId) {
-      throw new Error("Token không hợp lệ");
-    }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new Error("Người dùng không tồn tại");
-    }
-
-    const tokenDoc = user.refreshTokens.find(
-      (t) => t.token === token && !t.isRevoked
-    );
-
-    if (!tokenDoc) {
-      throw new Error("Refresh token không hợp lệ hoặc đã bị thu hồi");
-    }
-
-    if (new Date(tokenDoc.expiresAt) < new Date()) {
-      throw new Error("Refresh token đã hết hạn");
-    }
-
-    const accessToken = TokenService.generateAccessToken(user);
-
-    return {
-      accessToken,
-      user: UserService.formatUser(user),
-    };
   }
 
   async logout(token) {

@@ -60,15 +60,6 @@ router.post(
   OrderController.createOrderFromCart
 );
 
-// Routes cụ thể với param user_id
-router.get("/user/:id", apiLimiter, isAuth, async (req, res, next) => {
-  // Log thông tin để debug
-  console.log(`[DEBUG] Getting orders for user: ${req.params.id}`);
-  console.log(`[DEBUG] Query params:`, req.query);
-  
-  // Tiếp tục xử lý
-  return OrderController.getUserOrders(req, res, next);
-});
 
 // Routes với param id
 router.get("/:id", apiLimiter, isAuth, OrderController.getOrderById);

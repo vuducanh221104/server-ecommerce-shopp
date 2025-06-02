@@ -34,7 +34,7 @@ class AuthController {
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      maxAge: 15 * 60 * 10000,
+      maxAge: 15 * 60 * 10,
       sameSite: "strict",
       path: "/",
     });
@@ -82,7 +82,7 @@ class AuthController {
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      maxAge: 15 * 60 * 1000,
+      maxAge: 15 * 60 * 10,
       sameSite: "strict",
       path: "/",
     });
@@ -96,10 +96,21 @@ class AuthController {
 
   refreshToken = CatchError(async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
-
+    console.log(refreshToken);
     if (!refreshToken) {
-      res.clearCookie("accessToken");
-      res.clearCookie("refreshToken");
+      // Clear cookies with the same options they were set with
+      res.clearCookie("accessToken", {
+        httpOnly: true,
+        sameSite: "strict",
+        path: "/",
+      });
+      
+      res.clearCookie("refreshToken", {
+        httpOnly: true,
+        sameSite: "strict",
+        path: "/",
+      });
+      
       return res
         .status(401)
         .json({ message: "Refresh token không được cung cấp" });
@@ -117,7 +128,7 @@ class AuthController {
 
       res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        maxAge: 15 * 60 * 1000,
+        maxAge: 15 * 60 * 10,
         sameSite: "strict",
         path: "/",
       });
@@ -128,8 +139,21 @@ class AuthController {
         user,
       });
     } catch (error) {
-      res.clearCookie("accessToken");
-      res.clearCookie("refreshToken");
+      console.error("Refresh token error:", error.message);
+      
+      // Clear cookies with the same options they were set with
+      res.clearCookie("accessToken", {
+        httpOnly: true,
+        sameSite: "strict",
+        path: "/",
+      });
+      
+      res.clearCookie("refreshToken", {
+        httpOnly: true,
+        sameSite: "strict",
+        path: "/",
+      });
+      
       return res.status(401).json({ message: error.message });
     }
   });
@@ -141,8 +165,18 @@ class AuthController {
       await AuthService.logout(refreshToken);
     }
 
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+    // Clear cookies with the same options they were set with
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      sameSite: "strict",
+      path: "/",
+    });
+    
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "strict",
+      path: "/",
+    });
 
     return res.status(200).json({ message: "Đăng xuất thành công" });
   });
@@ -152,8 +186,18 @@ class AuthController {
 
     await AuthService.logoutFromAllDevices(userId);
 
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+    // Clear cookies with the same options they were set with
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      sameSite: "strict",
+      path: "/",
+    });
+    
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "strict",
+      path: "/",
+    });
 
     return res
       .status(200)
@@ -236,7 +280,7 @@ class AuthController {
     const accessToken = jwt.sign(
       { _id: user._id },
       process.env.JWT_ACCESS_KEY,
-      { expiresIn: "1h" }
+      { expiresIn: "10s" }
     );
     const refreshToken = jwt.sign(
       { _id: user._id },
@@ -276,7 +320,7 @@ class AuthController {
     const newAccessToken = jwt.sign(
       { _id: decoded._id },
       process.env.JWT_ACCESS_KEY,
-      { expiresIn: "1h" }
+      { expiresIn: "10s" }
     );
 
     const newRefreshToken = jwt.sign(

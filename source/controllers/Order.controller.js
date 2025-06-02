@@ -448,10 +448,8 @@ class OrderController {
     const { productId } = req.params;
     const userId = req.user.id;
 
-    console.log(`[DEBUG] Checking if user ${userId} can review product ${productId}`);
 
     if (!userId) {
-      console.log("[DEBUG] No user ID found in request");
       return res.status(401).json({
         status: "error",
         message: "Bạn cần đăng nhập để kiểm tra trạng thái đánh giá",
@@ -468,12 +466,8 @@ class OrderController {
         status: { $in: ["DELIVERED", "COMPLETED"] },
         "items.product_id": productId
       });
-      console.log(`[DEBUG] Found ${orders.length} eligible orders for user ${userId} and product ${productId}`);
-      console.log(`[DEBUG] Order status check: looking for status in ["DELIVERED", "COMPLETED"]`);
       
-      if (orders.length > 0) {
-        console.log(`[DEBUG] Order found with status: ${orders[0].status}`);
-      }
+
 
       // Also check if user has already reviewed this product
       const product = await Product.findOne({
@@ -481,11 +475,9 @@ class OrderController {
         "comments.user_id": userId
       });
 
-      console.log(`[DEBUG] User has already reviewed: ${product ? 'Yes' : 'No'}`);
 
       // User can review if they have a delivered order and haven't reviewed the product yet
       const canReview = orders.length > 0 && !product;
-      console.log(`[DEBUG] Final canReview decision: ${canReview}`);
 
       return res.status(200).json({
         status: "success",
